@@ -440,3 +440,8 @@ CyberFSR/imgui.ini
 /OptiScaler/resource_build_commit.h
 /OptiScaler/misc/Telemetry.cpp
 /OptiScaler/misc/Telemetry.h
+/_bl*.txt
+/_build_log.txt
+/build*.txt
+/stderr*.txt
+/stdout*.txt
