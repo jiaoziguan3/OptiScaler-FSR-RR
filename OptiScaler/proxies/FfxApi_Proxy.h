@@ -17,6 +17,7 @@
 #include <detours/detours.h>
 #include <ffx_framegeneration.h>
 #include <ffx_upscale.h>
+#include <fsr-rr/ffx_denoiser.h>
 
 #include <magic_enum.hpp>
 
@@ -124,9 +125,12 @@ class FfxApiProxy
         return result;
     }
 
+    // v2.3 SDK: the main DLL is a lightweight loader that dynamically loads feature DLLs.
+    // If the loader is present, feature availability is determined at CreateContext time.
     static bool IsSRReady()
     {
-        bool result = (main_dx12.dll && !main_dx12.isLoader) || upscaling_dx12.dll != nullptr;
+        bool result = (main_dx12.dll && !main_dx12.isLoader) || upscaling_dx12.dll != nullptr ||
+                      (main_dx12.dll && main_dx12.isLoader);
 
         if (!result)
             ImGui::InsertNotification({ ImGuiToastType::Error, 10000,
@@ -135,9 +139,12 @@ class FfxApiProxy
         return result;
     }
 
+    // v2.3 SDK: denoiser is dispatched through the loader DLL; denoiser_dx12 may not be
+    // directly loaded into the process space until the loader dynamically loads it.
     static bool IsDenoiserReady()
     {
-        bool result = (main_dx12.dll && !main_dx12.isLoader) || denoiser_dx12.dll != nullptr;
+        bool result = IsSRReady() && (denoiser_dx12.dll != nullptr ||
+                                      (main_dx12.dll != nullptr && main_dx12.isLoader));
 
         if (!result)
             ImGui::InsertNotification({ ImGuiToastType::Error, 10000,
@@ -148,7 +155,8 @@ class FfxApiProxy
 
     static bool IsRadianceReady()
     {
-        bool result = (main_dx12.dll && !main_dx12.isLoader) || radiance_dx12.dll != nullptr;
+        bool result = (main_dx12.dll && !main_dx12.isLoader) || radiance_dx12.dll != nullptr ||
+                      (main_dx12.dll && main_dx12.isLoader);
 
         if (!result)
             ImGui::InsertNotification({ ImGuiToastType::Error, 10000,
@@ -176,10 +184,10 @@ class FfxApiProxy
         case FFX_API_EFFECT_ID_FGSC_VK:
             return FFXStructType::SwapchainVulkan;
 
-        case 0x00050000u:
+        case FFX_API_EFFECT_ID_DENOISER:
             return FFXStructType::Denoiser;
 
-        case 0x00060000u:
+        case FFX_API_EFFECT_ID_RADIANCECACHE:
             return FFXStructType::RadianceCache;
 
         default:
@@ -375,32 +383,40 @@ class FfxApiProxy
 
         if (upscaling_dx12.dll == nullptr)
         {
-            // Try new api first
-            std::vector<std::wstring> dllNames = { L"amd_fidelityfx_upscaler_dx12.dll" };
-
-            auto optiPath = Config::Instance()->MainDllPath.value();
-
-            for (size_t i = 0; i < dllNames.size(); i++)
+            // When Driver-only mode, skip loading our SDK DLL
+            if (Config::Instance()->Fsr4ProviderPath.value_or_default() != Fsr4Provider::Driver)
             {
-                LOG_DEBUG("Trying to load {}", wstring_to_string(dllNames[i]));
+                // Try new api first
+                std::vector<std::wstring> dllNames = { L"amd_fidelityfx_upscaler_dx12.dll" };
 
-                auto overridePath = Config::Instance()->FfxDx12SRPath.value_or(L"");
+                auto optiPath = Config::Instance()->MainDllPath.value();
 
-                if (upscaling_dx12_hooked.dll == nullptr)
+                for (size_t i = 0; i < dllNames.size(); i++)
                 {
-                    Util::LoadProxyLibrary(dllNames[i], optiPath, overridePath, &upscaling_dx12_hooked.dll,
-                                           &upscaling_dx12.dll);
-                }
-                else
-                {
-                    HMODULE memModule = nullptr;
-                    Util::LoadProxyLibrary(dllNames[i], optiPath, overridePath, &memModule, &upscaling_dx12.dll);
-                }
+                    LOG_DEBUG("Trying to load {}", wstring_to_string(dllNames[i]));
 
-                if (upscaling_dx12.dll != nullptr)
-                {
-                    break;
+                    auto overridePath = Config::Instance()->FfxDx12SRPath.value_or(L"");
+
+                    if (upscaling_dx12_hooked.dll == nullptr)
+                    {
+                        Util::LoadProxyLibrary(dllNames[i], optiPath, overridePath, &upscaling_dx12_hooked.dll,
+                                               &upscaling_dx12.dll);
+                    }
+                    else
+                    {
+                        HMODULE memModule = nullptr;
+                        Util::LoadProxyLibrary(dllNames[i], optiPath, overridePath, &memModule, &upscaling_dx12.dll);
+                    }
+
+                    if (upscaling_dx12.dll != nullptr)
+                    {
+                        break;
+                    }
                 }
+            }
+            else
+            {
+                LOG_INFO("FSR4 Provider set to Driver, skipping amd_fidelityfx_upscaler_dx12.dll");
             }
         }
 
@@ -1090,7 +1106,8 @@ class FfxApiProxy
         {
             ffxQueryDescGetVersions versionQuery {};
             versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
-            versionQuery.createDescType = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
+            versionQuery.createDescType = FFX_API_CREATE_CONTEXT_DESC_TYPE_DENOISER;
+            versionQuery.device = State::Instance().currentD3D12Device;
             uint64_t versionCount = 0;
             versionQuery.outputCount = &versionCount;
 
@@ -1113,21 +1130,26 @@ class FfxApiProxy
                 if (queryResult == FFX_API_RETURN_OK)
                 {
                     denoiser_dx12.version.parse_version(versionNames[0]);
-                    LOG_INFO("FfxApi Dx12 SR version: {}.{}.{}", denoiser_dx12.version.major,
+                    LOG_INFO("FfxApi Dx12 RR version: {}.{}.{}", denoiser_dx12.version.major,
                              denoiser_dx12.version.minor, denoiser_dx12.version.patch);
                 }
                 else
                 {
-                    LOG_WARN("main_dx12.Query 2 result: {}", (UINT) queryResult);
+                    LOG_WARN("denoiser_dx12.Query 2 result: {}", (UINT) queryResult);
                 }
             }
             else
             {
-                LOG_WARN("main_dx12.Query result: {}", (UINT) queryResult);
+                LOG_WARN("denoiser_dx12.Query result: {}", (UINT) queryResult);
             }
         }
 
         return denoiser_dx12.version;
+    }
+
+    static feature_version VersionTarget_RR()
+    {
+        return feature_version { FFX_DENOISER_VERSION_MAJOR, FFX_DENOISER_VERSION_MINOR, FFX_DENOISER_VERSION_PATCH };
     }
 
     static feature_version VersionDx12_RC()

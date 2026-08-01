@@ -42,6 +42,7 @@
 #include <nvapi/NvApiHooks.h>
 
 #include "spoofing/User32_Spoofing.h"
+#include "translation/Translation.h"
 
 #include <cwctype>
 #include <magic_enum.hpp>
@@ -1157,148 +1158,154 @@ static void printQuirks(flag_set<GameQuirk>& quirks)
     std::vector<std::string> stringQuirks;
 
     if (quirks & GameQuirk::CyberpunkHudlessState)
-        stringQuirks.push_back("Fixing DLSSG's hudless state in Cyberpunk");
+        stringQuirks.push_back(Translation::Get("Fixing DLSSG's hudless state in Cyberpunk"));
 
     if (quirks & GameQuirk::FSRFGHudlessMismatchFixup)
-        stringQuirks.push_back("FSR FG hudless mismatch fixup");
+        stringQuirks.push_back(Translation::Get("FSR FG hudless mismatch fixup"));
 
     if (quirks & GameQuirk::SkipFsr3Method)
-        stringQuirks.push_back("Skipping first FSR 3 method");
+        stringQuirks.push_back(Translation::Get("Skipping first FSR 3 method"));
 
     if (quirks & GameQuirk::FastFeatureReset)
-        stringQuirks.push_back("Quick upscaler reinit");
+        stringQuirks.push_back(Translation::Get("Quick upscaler reinit"));
 
     if (quirks & GameQuirk::LoadD3D12Manually)
-        stringQuirks.push_back("Load d3d12.dll");
+        stringQuirks.push_back(Translation::Get("Load d3d12.dll"));
 
     if (quirks & GameQuirk::KernelBaseHooks)
-        stringQuirks.push_back("Enable KernelBase hooks");
+        stringQuirks.push_back(Translation::Get("Enable KernelBase hooks"));
 
     if (quirks & GameQuirk::VulkanDLSSBarrierFixup)
-        stringQuirks.push_back("Fix DLSS/DLSSG barriers on Vulkan");
+        stringQuirks.push_back(Translation::Get("Fix DLSS/DLSSG barriers on Vulkan"));
 
     if (quirks & GameQuirk::ForceUnrealEngine)
-        stringQuirks.push_back("Force detected engine as Unreal Engine");
+        stringQuirks.push_back(Translation::Get("Force detected engine as Unreal Engine"));
 
     if (quirks & GameQuirk::DisableHudfix)
-        stringQuirks.push_back("Disabling Hudfix due to known issues");
+        stringQuirks.push_back(Translation::Get("Disabling Hudfix due to known issues"));
 
     if (quirks & GameQuirk::ForceAutoExposure)
-        stringQuirks.push_back("Enabling AutoExposure");
+        stringQuirks.push_back(Translation::Get("Enabling AutoExposure"));
 
     if (quirks & GameQuirk::DisableFFXInputs)
-        stringQuirks.push_back("Disable FFX Inputs");
+        stringQuirks.push_back(Translation::Get("Disable FFX Inputs"));
 
     if (quirks & GameQuirk::DisableFSR3Inputs)
-        stringQuirks.push_back("Disable FSR 3.0 Inputs");
+        stringQuirks.push_back(Translation::Get("Disable FSR 3.0 Inputs"));
 
     if (quirks & GameQuirk::DisableFSR2Inputs)
-        stringQuirks.push_back("Disable FSR 2.X Inputs");
+        stringQuirks.push_back(Translation::Get("Disable FSR 2.X Inputs"));
 
     if (quirks & GameQuirk::DisableReactiveMasks)
-        stringQuirks.push_back("Disable Reactive Masks");
+        stringQuirks.push_back(Translation::Get("Disable Reactive Masks"));
 
     if (quirks & GameQuirk::RestoreComputeSigOnNonNvidia)
-        stringQuirks.push_back("Enabling restore compute signature on AMD/Intel");
+        stringQuirks.push_back(Translation::Get("Enabling restore compute signature on AMD/Intel"));
 
     if (quirks & GameQuirk::RestoreComputeSigOnNvidia)
-        stringQuirks.push_back("Enabling restore compute signature on Nvidia");
+        stringQuirks.push_back(Translation::Get("Enabling restore compute signature on Nvidia"));
 
     if (quirks & GameQuirk::ExtendedSigRestore)
-        stringQuirks.push_back("Extended signatures restore");
+        stringQuirks.push_back(Translation::Get("Extended signatures restore"));
 
     if (quirks & GameQuirk::DisableDxgiSpoofing)
-        stringQuirks.push_back("Dxgi spoofing disabled by default");
+        stringQuirks.push_back(Translation::Get("Dxgi spoofing disabled by default"));
 
     if (quirks & GameQuirk::DisableUseFsrInputValues)
-        stringQuirks.push_back("Disable Use FSR Input Values");
+        stringQuirks.push_back(Translation::Get("Disable Use FSR Input Values"));
 
     if (quirks & GameQuirk::DisableOptiXessPipelineCreation)
-        stringQuirks.push_back("Disable custom pipeline creation for XeSS");
+        stringQuirks.push_back(Translation::Get("Disable custom pipeline creation for XeSS"));
 
     if (quirks & GameQuirk::DontUseNTShared)
-        stringQuirks.push_back("Don't use NTShared enabled");
+        stringQuirks.push_back(Translation::Get("Don't use NTShared enabled"));
 
     if (quirks & GameQuirk::DontUseUnrealBarriers)
-        stringQuirks.push_back("Don't use resource barrier fix for Unreal Engine games");
+        stringQuirks.push_back(Translation::Get("Don't use resource barrier fix for Unreal Engine games"));
 
     if (quirks & GameQuirk::SkipFirst10Frames)
-        stringQuirks.push_back("Skipping upscaling for first 10 frames");
+        stringQuirks.push_back(Translation::Get("Skipping upscaling for first 10 frames"));
 
     if (quirks & GameQuirk::NoFSRFGFirstSwapchain)
-        stringQuirks.push_back("Skip turning the first swapchain created into an FSR swapchain");
+        stringQuirks.push_back(Translation::Get("Skip turning the first swapchain created into an FSR swapchain"));
 
     if (quirks & GameQuirk::FixSlSimulationMarkers)
-        stringQuirks.push_back("Correct simulation start marker's frame id");
+        stringQuirks.push_back(Translation::Get("Correct simulation start marker's frame id"));
 
     if (quirks & GameQuirk::DisableVsyncOverride)
-        stringQuirks.push_back("Don't use V-Sync overrides");
+        stringQuirks.push_back(Translation::Get("Don't use V-Sync overrides"));
 
     if (quirks & GameQuirk::HitmanReflexHacks)
-        stringQuirks.push_back("Hack for broken Hitman reflex");
+        stringQuirks.push_back(Translation::Get("Hack for broken Hitman reflex"));
 
     if (quirks & GameQuirk::SkipD3D11FeatureLevelElevation)
-        stringQuirks.push_back("Skipping D3D11 feature level elevation, native FSR3.1 will be disabled!");
+        stringQuirks.push_back(Translation::Get("Skipping D3D11 feature level elevation, native FSR3.1 will be disabled!"));
 
     if (quirks & GameQuirk::DontUseNtDllHooks)
-        stringQuirks.push_back("Using kernel hooks instead of NTdll ones");
+        stringQuirks.push_back(Translation::Get("Using kernel hooks instead of NTdll ones"));
 
     if (quirks & GameQuirk::UseFSR2PatternMatching)
-        stringQuirks.push_back("Use FSR2 pattern matching");
+        stringQuirks.push_back(Translation::Get("Use FSR2 pattern matching"));
 
     if (quirks & GameQuirk::AlwaysCaptureFSRFGSwapchain)
-        stringQuirks.push_back("Always capture FSR-FG swapchain");
+        stringQuirks.push_back(Translation::Get("Always capture FSR-FG swapchain"));
 
     if (quirks & GameQuirk::AllowedFrameAhead2)
-        stringQuirks.push_back("Allowed Frame Ahead: 2");
+        stringQuirks.push_back(Translation::Get("Allowed Frame Ahead: 2"));
 
     if (quirks & GameQuirk::DisableXeFGChecks)
-        stringQuirks.push_back("Skip pre init checks for XeFG");
+        stringQuirks.push_back(Translation::Get("Skip pre init checks for XeFG"));
 
     if (quirks & GameQuirk::CreateD3D12DeviceForLuma)
-        stringQuirks.push_back("Create D3D12 device for Luma before loading Reshade");
+        stringQuirks.push_back(Translation::Get("Create D3D12 device for Luma before loading Reshade"));
 
     if (quirks & GameQuirk::LoadVulkanManually)
-        stringQuirks.push_back("Load vulkan-1.dll");
+        stringQuirks.push_back(Translation::Get("Load vulkan-1.dll"));
 
     if (quirks & GameQuirk::UseFsr2Dx11Inputs)
-        stringQuirks.push_back("Use FSR2 DX11 inputs");
+        stringQuirks.push_back(Translation::Get("Use FSR2 DX11 inputs"));
 
     if (quirks & GameQuirk::UseFsr2VulkanInputs)
-        stringQuirks.push_back("Use FSR2 Vulkan inputs");
+        stringQuirks.push_back(Translation::Get("Use FSR2 Vulkan inputs"));
 
     if (quirks & GameQuirk::ForceBorderlessWhenUsingXeFG)
-        stringQuirks.push_back("Force Borderless when using XeFG");
+        stringQuirks.push_back(Translation::Get("Force Borderless when using XeFG"));
 
     if (quirks & GameQuirk::OverrideVsyncWhenUsingXeFG)
-        stringQuirks.push_back("Override Vsync when using XeFG");
+        stringQuirks.push_back(Translation::Get("Override Vsync when using XeFG"));
 
     if (quirks & GameQuirk::ForceCreateD3D12Device)
-        stringQuirks.push_back("Force create D3D12 device for w/Dx12");
+        stringQuirks.push_back(Translation::Get("Force create D3D12 device for w/Dx12"));
 
     if (quirks & GameQuirk::DisableResizeSkip)
-        stringQuirks.push_back("Disable Resize Skip");
+        stringQuirks.push_back(Translation::Get("Disable Resize Skip"));
 
     if (quirks & GameQuirk::SpoofRegistry)
-        stringQuirks.push_back("Spoof Registry");
+        stringQuirks.push_back(Translation::Get("Spoof Registry"));
 
     if (quirks & GameQuirk::DisableFakenvapi)
-        stringQuirks.push_back("Disable fakenvapi");
+        stringQuirks.push_back(Translation::Get("Disable fakenvapi"));
 
     if (quirks & GameQuirk::ForceDepthD32S8)
-        stringQuirks.push_back("Force depth as D32S8");
+        stringQuirks.push_back(Translation::Get("Force depth as D32S8"));
 
     if (quirks & GameQuirk::DoNotPreserveFGSwapChain)
-        stringQuirks.push_back("Don't Preserve FG Swapchain");
+        stringQuirks.push_back(Translation::Get("Don't Preserve FG Swapchain"));
 
     if (quirks & GameQuirk::OldOverlayMenu)
-        stringQuirks.push_back("Using old overlay (draws on upscaled image)");
+        stringQuirks.push_back(Translation::Get("Using old overlay (draws on upscaled image)"));
 
     if (quirks & GameQuirk::PregmataFixDLSSModes)
-        stringQuirks.push_back("Fix DLSS quality selection in Pragmata");
+        stringQuirks.push_back(Translation::Get("Fix DLSS quality selection in Pragmata"));
 
     if (quirks & GameQuirk::IgnoreValidUntilEvaluateForFG)
-        stringQuirks.push_back("Ignore ValidUntilEvaluate resources for FG");
+        stringQuirks.push_back(Translation::Get("Ignore ValidUntilEvaluate resources for FG"));
+
+    if (quirks & GameQuirk::IgnoreTagsWithoutHudlessForFG)
+        stringQuirks.push_back(Translation::Get("Ignore tagging calls that lack Hudless resource for FG"));
+
+    if (quirks & GameQuirk::ForceFGRenderSizeMVs)
+        stringQuirks.push_back(Translation::Get("Force FG render size motion vectors"));
 
     state->detectedQuirks.append_range(stringQuirks);
     for (auto& stringQuirk : stringQuirks)
@@ -1626,14 +1633,13 @@ static void CheckQuirks(bool isNvidia)
         }
     }
 
-    // if (!Config::Instance()->DxgiFactoryWrapping.has_value() && Config::Instance()->LoadReShade.value_or_default() &&
-    //     quirks & GameQuirk::CreateD3D12DeviceForLuma && State::Instance().activeFgInput != FGInput::NoFG &&
-    //     State::Instance().activeFgInput != FGInput::NvngxFG)
-    //{
-    //     Config::Instance()->DxgiFactoryWrapping.set_volatile_value(true);
-    //     State::Instance().detectedQuirks.push_back("Factory wrapping enabled due to delayed ReShade + FG");
-    //     LOG_INFO("Factory wrapping enabled due to delayed ReShade + FG");
-    // }
+    if (Config::Instance()->LoadReShade.value_or_default() && quirks & GameQuirk::CreateD3D12DeviceForLuma &&
+        State::Instance().activeFgInput != FGInput::NoFG && State::Instance().activeFgInput != FGInput::NvngxFG)
+    {
+        Config::Instance()->DxgiFactoryWrapping.set_volatile_value(true);
+        State::Instance().detectedQuirks.push_back("Factory wrapping enabled due to delayed ReShade + FG");
+        LOG_INFO("Factory wrapping enabled due to delayed ReShade + FG");
+    }
 
     if (Config::Instance()->LoadSpecialK.value_or_default() && State::Instance().activeFgInput != FGInput::NoFG &&
         State::Instance().activeFgInput != FGInput::NvngxFG)
@@ -1720,7 +1726,7 @@ DWORD WINAPI getGpuInfo(LPVOID hModuleVoid)
     if (primaryGpu.vendorId == VendorId::AMD)
         Amdxc64Hooks::Init();
 
-    else if (Config::Instance()->Fsr4ForceModel.value_or_default() == FSR4Support::INT8)
+    if (Config::Instance()->Fsr4ForceModel.value_or_default() == FSR4Support::INT8)
     {
         // We need spoofing hooks for FFX but want to avoid spoofing for the rest of the game
         if (!Config::Instance()->DxgiSpoofing.value_or_default())

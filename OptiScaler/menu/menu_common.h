@@ -5,6 +5,22 @@
 
 #include <imgui/imgui.h>
 
+// Stable section identifiers for the main menu sidebar.
+// The sidebar is built dynamically each frame (some sections are conditionally
+// visible, e.g. Ray Reconstruction only appears when the game enables DLSS-RR),
+// so positional indices cannot be used as persistent state.
+enum class MenuSection : int
+{
+    Upscaling = 0,
+    FrameGen,
+    Image,
+    Latency,
+    Display,
+    Advanced,
+    Settings,
+    RayReconstruction,
+};
+
 class ScopedIndent
 {
   public:
@@ -93,6 +109,7 @@ class MenuCommon
     // ffx
     inline static int _ffxUpscalerIndex = -1;
     inline static int _ffxFGIndex = -1;
+    inline static int _ffxDenoiserMode = -1;
 
     // output scaling
     inline static float _ssRatio = 0.0f;
@@ -141,6 +158,7 @@ class MenuCommon
     static void RenderNotifications(RenderMenuContext& ctx);
     static void UpdateFrameTimeAverages(RenderMenuContext& ctx);
     static void RenderPerformanceOverlay(RenderMenuContext& ctx);
+    static void RenderCursor(RenderMenuContext& ctx);
     static void RenderMainMenuWindow(RenderMenuContext& ctx);
 
     // RenderMainMenuWindow section helpers. These keep the main window flow readable
@@ -153,9 +171,7 @@ class MenuCommon
     static void RenderFsrCommonSettings(RenderMenuContext& ctx);
     static void RenderFramerateSettings(RenderMenuContext& ctx);
     static void RenderFakenvapiSettings(RenderMenuContext& ctx);
-    static void RenderLowLatencySettings(RenderMenuContext& ctx);
     static void RenderActiveImageSettings(RenderMenuContext& ctx);
-    static void RenderMagnifierSettings(RenderMenuContext& ctx);
     static void RenderQuirksSettings(RenderMenuContext& ctx);
     static void RenderAdvancedSettings(RenderMenuContext& ctx);
     static void RenderLoggingSettings(RenderMenuContext& ctx);
@@ -164,6 +180,8 @@ class MenuCommon
     static void RenderUpscalerInputsSettings(RenderMenuContext& ctx);
     static void RenderApiAndTextureSettings(RenderMenuContext& ctx);
     static void RenderKeybindSettings(RenderMenuContext& ctx);
+    static void RenderSettingsSection(RenderMenuContext& ctx);
+    static void RenderRayReconstructionSettings(RenderMenuContext& ctx);
     static void RenderMainMenuGraphs(RenderMenuContext& ctx);
     static void RenderMainMenuBottomBar(RenderMenuContext& ctx);
     static void RenderMipmapBiasWindow(RenderMenuContext& ctx, ImGuiWindowFlags flags);

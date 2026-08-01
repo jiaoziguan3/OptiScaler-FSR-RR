@@ -29,7 +29,6 @@ enum class InputResult : uint32_t
     InvalidParameter,
     LowLatencyUpdateFail,
     NotEnoughReports,
-    NoReadyOutput,
     GenericError,
 };
 
@@ -47,10 +46,8 @@ struct TimingData
 class InputCommon
 {
     inline static std::atomic<std::shared_ptr<LowLatencyTech>> currently_active_tech;
-    inline static std::mutex create_tech_mutex {};
-
     inline static FrameReport frame_reports[FRAME_REPORTS_BUFFER_SIZE] {};
-    inline static std::atomic_uint64_t last_present_start_frame_id = 0;
+    inline static std::atomic_uint32_t last_present_start_frame_id = 0;
     inline static std::atomic_uint32_t delay_deinit = 0;
     inline static std::array<SleepMode, static_cast<size_t>(LowLatencyInput::_)> sleep_mode_copies {};
 
@@ -60,7 +57,6 @@ class InputCommon
     inline static bool enabled = false;
 
     static bool deinit_current_tech();
-    static bool init_tech(IUnknown* pDevice, LowLatencyMode desiredMode);
     static bool update_low_latency_tech(IUnknown* pDevice, std::optional<LowLatencyMode> mode = std::nullopt);
     static void add_marker_to_report(const MarkerParams& marker_params);
     static void set_input_avaliable(LowLatencyInput input) { avaliableInputs.set(input); };
@@ -81,13 +77,8 @@ class InputCommon
     get_latency(const InputContext& inputContext, IUnknown* pDev,
                 void* latency_params); // NV_LATENCY_RESULT_PARAMS* for reflex, xell_frame_report_t* for xell,
     static bool get_timing_data(TimingData& timingDataOut);
-    static uint64_t get_last_present_start_frame_id() { return last_present_start_frame_id; };
+    static uint32_t get_last_present_start_frame_id() { return last_present_start_frame_id; };
     static flag_set<LowLatencyInput> get_avaliable_inputs() { return avaliableInputs; };
-    static void get_currently_active(LowLatencyInput& activeInput, LowLatencyMode& activeOutput)
-    {
-        activeInput = InputCommon::activeInput;
-        activeOutput = InputCommon::activeOutput;
-    }
 
     // passthrough when possible, fillout with local frame_reports if not
 
@@ -98,6 +89,6 @@ class InputCommon
                                                              // async markers can be made
     static xell_result_t pass_xellSetDisplayInfo(const InputContext& inputContext, void* displayInfo);
     static xell_result_t pass_xellSetFgEnabled(const InputContext& inputContext, uint32_t param1, uint32_t param2);
-    static xell_result_t pass_xellSetGeneratedFramesCount(const InputContext& inputContext, uint32_t frameId,
+    static xell_result_t pass_xellSetGeneratedFramesCount(const InputContext& inputContext, uint32_t param1,
                                                           uint32_t framesCount);
 };

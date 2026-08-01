@@ -7,6 +7,7 @@
 #include <ankerl/unordered_dense.h>
 #include <misc/IdentifyGpu.h>
 #include <framegen/nvngx/Nvngx_FG.h>
+#include "proxies/FfxApi_Proxy.h"
 
 /// @brief Calculates the resolution scaling ratio override based on the provided quality level and current
 /// configuration.
@@ -75,7 +76,7 @@ std::optional<float> GetQualityOverrideRatio(const NVSDK_NGX_PerfQuality_Value i
     return output;
 }
 
-NVNGX_Parameters::NVNGX_Parameters(std::string_view name, bool isPersistent) : Name(name)
+NVNGX_Parameters::NVNGX_Parameters(API api, bool isPersistent) : Api(api)
 {
     // Old flag used to indicate custom table. Obsolete?
     Set("OptiScaler", 1);
@@ -349,7 +350,8 @@ void NVNGX_Parameters::Reset()
 
     LOG_DEBUG("Start");
 
-    InitNGXParameters(this);
+    // As fallback using api during params creation
+    InitNGXParameters(this, Api);
 
     LOG_DEBUG("End");
 }
@@ -701,7 +703,7 @@ NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetStatsCallback(NVSDK_NGX_Parameter*
     return NVSDK_NGX_Result_Success;
 }
 
-void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
+void InitNGXParameters(NVSDK_NGX_Parameter* InParams, API api)
 {
     InParams->Set(NVSDK_NGX_Parameter_SuperSampling_Available, 1);
 
@@ -794,13 +796,27 @@ void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
             InParams->Set("SuperSamplingDenoising.MinDriverVersionMinor", 0);
         }
 
-        InParams->Set("SuperSamplingDenoising.Available", 0);
-        InParams->Set("SuperSamplingDenoising.FeatureInitResult", 0);
+        bool ssDenoiseAvailable = false;
+
+        if (State::Instance().currentD3D12Device != nullptr)
+        {
+            if (!FfxApiProxy::IsDenoiserReady())
+                FfxApiProxy::InitFfxDx12();
+
+            ssDenoiseAvailable = FfxApiProxy::IsSRReady() && FfxApiProxy::IsDenoiserReady() &&
+                                 FfxApiProxy::VersionDx12_RR() == FfxApiProxy::VersionTarget_RR();
+
+            if (ssDenoiseAvailable)
+                LOG_DEBUG("Setting DLSSD flags for FSR Ray Regeneration");
+        }
+
+        InParams->Set("SuperSamplingDenoising.Available", ssDenoiseAvailable);
+        InParams->Set("SuperSamplingDenoising.FeatureInitResult", ssDenoiseAvailable);
     }
 
-    // not ideal as it doesn't take different APIs into account
-    if (State::Instance().activeFgInput == FGInput::NvngxFG || State::Instance().activeFgInput == FGInput::DLSSG ||
-        State::Instance().activeFgOutput == FGOutput::DLSSGWithNvngx)
+    if ((api == API::DX12 || api == API::Vulkan) &&
+        (State::Instance().activeFgInput == FGInput::NvngxFG || State::Instance().activeFgInput == FGInput::DLSSG ||
+         State::Instance().activeFgOutput == FGOutput::DLSSGWithNvngx))
     {
         InParams->Set("FrameGeneration.Available", 1);
         InParams->Set("FrameGeneration.NeedsUpdatedDriver", 0);
@@ -810,7 +826,7 @@ void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
         InParams->Set(NVSDK_NGX_Parameter_FrameInterpolation_FeatureInitResult, 1);
 
         // Streamline handle the max interpolated frame count
-        InParams->Set("DLSSG.MultiFrameCountMax", Nvngx_FG::isMFG() ? 5 : 1);
+        InParams->Set("DLSSG.MultiFrameCountMax", Nvngx_FG::getMaxFakeFramesCount(api));
 
         if (State::Instance().NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL ||
             State::Instance().gameEngine == GameEngineType::Unreal ||
@@ -827,10 +843,10 @@ void InitNGXParameters(NVSDK_NGX_Parameter* InParams)
     }
 }
 
-NVNGX_Parameters* GetNGXParameters(std::string_view name, bool isPersistent)
+NVNGX_Parameters* GetNGXParameters(API api, bool isPersistent)
 {
-    auto params = new NVNGX_Parameters(name, isPersistent);
-    InitNGXParameters(params);
+    auto params = new NVNGX_Parameters(api, isPersistent);
+    InitNGXParameters(params, api);
     return params;
 }
 

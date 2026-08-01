@@ -60,6 +60,8 @@ enum class GameQuirk : uint64_t
     ForceDepthD32S8,
     PregmataFixDLSSModes,
     IgnoreValidUntilEvaluateForFG,
+    IgnoreTagsWithoutHudlessForFG,
+    ForceFGRenderSizeMVs,
     // Don't forget to add the new entry to printQuirks
     _
 };
@@ -117,7 +119,8 @@ static const QuirkEntry quirkTable[] = {
     QUIRK_ENTRY("pathofexile_x64steam.exe", GameQuirk::LoadD3D12Manually, GameQuirk::DisableDxgiSpoofing),
 
     // Where Winds Meet
-    QUIRK_ENTRY("wwm.exe", GameQuirk::DisableXeFGChecks),
+    // SL spoof enough to unlock everything DLSS, required to avoid forced DLSS dilated MVs
+    QUIRK_ENTRY("wwm.exe", GameQuirk::DisableDxgiSpoofing, GameQuirk::ForceFGRenderSizeMVs),
 
     // Arknights: Endfield
     QUIRK_ENTRY("endfield.exe", GameQuirk::ForceCreateD3D12Device, GameQuirk::DisableFakenvapi),
@@ -130,12 +133,21 @@ static const QuirkEntry quirkTable[] = {
     // Kernel hooks required to unlock DLSS inputs, Not preserving FG Swapchain for fixing XeFG
     QUIRK_ENTRY_UE(client, GameQuirk::DontUseNtDllHooks, GameQuirk::DoNotPreserveFGSwapChain),
 
+    // Zenless Zone Zero
+    // IgnoreTagsWithoutHudlessForFG fixes flipped Unity MVs/Depth
+    QUIRK_ENTRY("zenlesszonezero.exe", GameQuirk::IgnoreTagsWithoutHudlessForFG),
+
     // Trails in the Sky 1st Chapter
     QUIRK_ENTRY("sora_1st.exe", GameQuirk::UseFsr2Dx11Inputs, GameQuirk::DisableDxgiSpoofing),
 
     // Ninja Gaiden 4
     QUIRK_ENTRY("ninjagaiden4-steam.exe", GameQuirk::DisableResizeSkip, GameQuirk::DoNotPreserveFGSwapChain),
     QUIRK_ENTRY("ninjagaiden4-wingdk.exe", GameQuirk::DisableResizeSkip, GameQuirk::DoNotPreserveFGSwapChain),
+
+    // DEAD OR ALIVE 6 Last Round
+    // No spoof needed for DLSS inputs
+    QUIRK_ENTRY("doa6lr.exe", GameQuirk::DisableDxgiSpoofing, GameQuirk::DisableResizeSkip,
+                GameQuirk::DoNotPreserveFGSwapChain),
 
     // The Last of Us Part I
     QUIRK_ENTRY("tlou-i.exe", GameQuirk::AllowedFrameAhead2, GameQuirk::DisableDxgiSpoofing),
@@ -332,6 +344,25 @@ static const QuirkEntry quirkTable[] = {
     // SL spoof enough to unlock everything DLSS, AE required to fix FSR4 ghosting
     QUIRK_ENTRY("assettocorsaevo.exe", GameQuirk::DisableDxgiSpoofing, GameQuirk::ForceAutoExposure),
 
+    // The Medium
+    // No spoof needed for DLSS inputs, no UE barriers to fix crash on upscaler init
+    QUIRK_ENTRY_UE(medium, GameQuirk::DisableDxgiSpoofing, GameQuirk::DontUseUnrealBarriers),
+
+    // Watch Dogs: Legion
+    // AE required to fix FSR4 ghosting
+    QUIRK_ENTRY("watchdogslegion.exe", GameQuirk::ForceAutoExposure),
+    QUIRK_ENTRY("watchdogslegion_plus.exe", GameQuirk::ForceAutoExposure),
+
+    // Assassin's Creed Shadows
+    // SL spoof enough to unlock everything DLSS
+    QUIRK_ENTRY("acshadows.exe", GameQuirk::DisableDxgiSpoofing),
+    QUIRK_ENTRY("acshadows_plus.exe", GameQuirk::DisableDxgiSpoofing),
+
+    // Assassin's Creed Black Flag Resynced
+    // SL spoof enough to unlock everything DLSS
+    QUIRK_ENTRY("acblackflag.exe", GameQuirk::DisableDxgiSpoofing),
+    QUIRK_ENTRY("acblackflag_plus.exe", GameQuirk::DisableDxgiSpoofing),
+
     // SL spoof enough to unlock everything DLSS/No spoof needed for DLSS inputs
     //
     // The Witcher 3, Alan Wake 2, Crysis 3 Remastered, Marvel's Guardians of the Galaxy, UNCHARTED: Legacy of Thieves
@@ -361,7 +392,6 @@ static const QuirkEntry quirkTable[] = {
     QUIRK_ENTRY("crysis2remastered.exe", GameQuirk::DisableDxgiSpoofing),
     QUIRK_ENTRY_UE(dungeonhaven, GameQuirk::DisableDxgiSpoofing),
     QUIRK_ENTRY("sekiro.exe", GameQuirk::DisableDxgiSpoofing), // Sekiro TSR mod required for upscalers
-    QUIRK_ENTRY_UE(medium, GameQuirk::DisableDxgiSpoofing),
     QUIRK_ENTRY("ninjagaiden4-steam.exe", GameQuirk::DisableDxgiSpoofing),
     QUIRK_ENTRY("ninjagaiden4-wingdk.exe", GameQuirk::DisableDxgiSpoofing), // NG4 WinGDK
     QUIRK_ENTRY("gow.exe", GameQuirk::DisableDxgiSpoofing),
@@ -370,9 +400,7 @@ static const QuirkEntry quirkTable[] = {
     QUIRK_ENTRY("nioh2.exe", GameQuirk::DisableDxgiSpoofing, GameQuirk::ForceAutoExposure),
     QUIRK_ENTRY("control_dx12.exe", GameQuirk::DisableDxgiSpoofing, GameQuirk::ForceAutoExposure),
     QUIRK_ENTRY("deathloop.exe", GameQuirk::DisableDxgiSpoofing),
-    QUIRK_ENTRY("wwm.exe", GameQuirk::DisableDxgiSpoofing),
     QUIRK_ENTRY("ff7remake_.exe", GameQuirk::DisableDxgiSpoofing), // Luma mod required for upscalers
-    QUIRK_ENTRY("acshadows.exe", GameQuirk::DisableDxgiSpoofing),
     QUIRK_ENTRY("farmingsimulator2025game.exe", GameQuirk::DisableDxgiSpoofing),
     QUIRK_ENTRY("nioh3.exe", GameQuirk::DisableDxgiSpoofing),
     QUIRK_ENTRY("fatalframeii.exe", GameQuirk::DisableDxgiSpoofing),

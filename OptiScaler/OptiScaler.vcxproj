@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -245,29 +245,36 @@
       <AdditionalOptions>/ignore:4099</AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>md $(SolutionDir)x64\Release\a\
-move $(SolutionDir)x64\Release\$(TargetFileName) $(SolutionDir)x64\Release\a\
-md $(SolutionDir)x64\Release\a\Licenses
-del /Q $(SolutionDir)x64\Release\a\Licenses\*.*
-copy $(SolutionDir)external\xess\LICENSE.txt $(SolutionDir)x64\Release\a\Licenses\XeSS_LICENSE.txt /Y
-md $(SolutionDir)x64\Release\a\OptiScaler
-copy $(SolutionDir)external\xess\bin\*.dll $(SolutionDir)x64\Release\a\OptiScaler\ /Y
-copy $(SolutionDir)external\FidelityFX-SDK\docs\license.md $(SolutionDir)x64\Release\a\OptiScaler\Licenses\FidelityFX_v1_LICENSE.md /Y
-copy $(SolutionDir)external\FidelityFX-SDK\PrebuiltSignedDLL\amd_fidelityfx_vk.dll $(SolutionDir)x64\Release\a\OptiScaler\ /Y
-copy $(SolutionDir)external\FidelityFX-SDK-v2\Kits\FidelityFX\signedbin\amd_fidelityfx_loader_dx12.dll $(SolutionDir)x64\Release\a\OptiScaler\ /Y
-copy $(SolutionDir)external\FidelityFX-SDK-v2\Kits\FidelityFX\signedbin\amd_fidelityfx_upscaler_dx12.dll $(SolutionDir)x64\Release\a\OptiScaler\ /Y
-copy $(SolutionDir)external\FidelityFX-SDK-v2\Kits\FidelityFX\signedbin\amd_fidelityfx_framegeneration_dx12.dll $(SolutionDir)x64\Release\a\OptiScaler\ /Y
-copy $(SolutionDir)external\FidelityFX-SDK-v2\docs\license.md $(SolutionDir)x64\Release\a\Licenses\FidelityFX_v2_LICENSE.md /Y
-copy $(SolutionDir)OptiScaler.ini $(SolutionDir)x64\Release\a\ /Y
-copy $(SolutionDir)setup_windows.bat $(SolutionDir)x64\Release\a\ /Y
-copy $(SolutionDir)setup_linux.sh $(SolutionDir)x64\Release\a\ /Y
-md $(SolutionDir)x64\Release\a\D3D12_Optiscaler\
-copy "$(SolutionDir)external\directx_agility_sdk\lib\*.dll" $(SolutionDir)x64\Release\a\D3D12_Optiscaler\ /Y
-copy "$(SolutionDir)external\directx_agility_sdk\LICENSE.txt" $(SolutionDir)x64\Release\a\Licenses\DirectX_LICENSE.txt /Y
+      <Command>md "$(SolutionDir)x64\Release\a\" 2&gt;nul
+move "$(SolutionDir)x64\Release\$(TargetFileName)" "$(SolutionDir)x64\Release\a\"
+md "$(SolutionDir)x64\Release\a\OptiScaler\" 2&gt;nul
+md "$(SolutionDir)x64\Release\a\Licenses" 2&gt;nul
+del /Q "$(SolutionDir)x64\Release\a\Licenses\*.*" 2&gt;nul
+copy "$(SolutionDir)external\xess\LICENSE.txt" "$(SolutionDir)x64\Release\a\Licenses\XeSS_LICENSE.txt" /Y
+copy "$(SolutionDir)external\xess\bin\*.dll" "$(SolutionDir)x64\Release\a\OptiScaler\" /Y
+copy "$(SolutionDir)external\FidelityFX-SDK\docs\license.md" "$(SolutionDir)x64\Release\a\Licenses\FidelityFX_v1_LICENSE.md" /Y
+copy "$(SolutionDir)external\FidelityFX-SDK\PrebuiltSignedDLL\amd_fidelityfx_vk.dll" "$(SolutionDir)x64\Release\a\OptiScaler\" /Y
+copy "$(SolutionDir)external\FidelityFX-SDK-v2\Kits\FidelityFX\signedbin\amd_fidelityfx_loader_dx12.dll" "$(SolutionDir)x64\Release\a\OptiScaler\amd_fidelityfx_dx12.dll" /Y
+copy "$(SolutionDir)external\FidelityFX-SDK-v2\Kits\FidelityFX\signedbin\amd_fidelityfx_upscaler_dx12.dll" "$(SolutionDir)x64\Release\a\OptiScaler\" /Y
+copy "$(SolutionDir)external\FidelityFX-SDK-v2\Kits\FidelityFX\signedbin\amd_fidelityfx_framegeneration_dx12.dll" "$(SolutionDir)x64\Release\a\OptiScaler\" /Y
+copy "$(SolutionDir)external\FidelityFX-SDK-v2\Kits\FidelityFX\signedbin\amd_fidelityfx_denoiser_dx12.dll" "$(SolutionDir)x64\Release\a\OptiScaler\" /Y
+powershell -NoProfile -Command "$od='$(SolutionDir)x64\Release\a\OptiScaler'; echo 'Downloading fakenvapi...'; if(-not(Test-Path \"$od\fakenvapi.dll\") -or -not(Test-Path \"$od\fakenvapi.ini\")){$tmp='$(SolutionDir)x64\Release\_tmp\fakenvapi.7z'; $_=New-Item -ItemType Directory -Force (Split-Path $tmp); try{Invoke-WebRequest 'https://github.com/optiscaler/fakenvapi/releases/download/v1.4.1/fakenvapi-v1.4.1.7z' -OutFile $tmp; 7z.exe e -y $tmp -o\"$od\"; rm \"$od\LICENSE*\" -ErrorAction SilentlyContinue; echo 'fakenvapi downloaded from GitHub'}catch{echo 'GitHub unreachable, copying fakenvapi from local...'; copy '$(SolutionDir)fakenvapi.dll' \"$od\" -ErrorAction SilentlyContinue; copy '$(SolutionDir)fakenvapi.ini' \"$od\" -ErrorAction SilentlyContinue; echo 'fakenvapi copied from local'}} else { echo 'fakenvapi already exists' }; echo 'Downloading dlssg-to-fsr3...'; if(-not(Test-Path \"$od\dlssg_to_fsr3_amd_is_better.dll\")){$tmp='$(SolutionDir)x64\Release\_tmp\dlssg.zip'; $_=New-Item -ItemType Directory -Force (Split-Path $tmp); try{Invoke-WebRequest 'https://github.com/optiscaler/dlssg-to-fsr3/releases/download/0.130/dlssg-to-fsr3-master.zip' -OutFile $tmp; Expand-Archive $tmp -DestinationPath \"$od\" -Force; rm \"$od\LICENSE*\" -ErrorAction SilentlyContinue; echo 'dlssg-to-fsr3 downloaded from GitHub'}catch{echo 'GitHub unreachable, copying dlssg-to-fsr3 from local...'; copy '$(SolutionDir)dlssg_to_fsr3_amd_is_better.dll' \"$od\" -ErrorAction SilentlyContinue; echo 'dlssg-to-fsr3 copied from local'}} else { echo 'dlssg-to-fsr3 already exists' }"
+xcopy "$(SolutionDir)streamline\*" "$(SolutionDir)x64\Release\a\OptiScaler\streamline\" /E /Y /I
+md "$(SolutionDir)x64\Release\a\OptiScaler\plugins\" 2&gt;nul
+powershell -NoProfile -Command "echo 'Downloading OptiPatcher.asi...'; $d='$(SolutionDir)x64\Release\a\OptiScaler\plugins'; if(-not(Test-Path \"$d\OptiPatcher.asi\")){try{Invoke-WebRequest 'https://github.com/optiscaler/OptiPatcher/releases/download/rolling/OptiPatcher.asi' -OutFile \"$d\OptiPatcher.asi\"; echo 'OptiPatcher.asi downloaded from GitHub'}catch{echo 'GitHub unreachable, copying from local...'; copy '$(SolutionDir)plugins\OptiPatcher.asi' \"$d\OptiPatcher.asi\"; echo 'OptiPatcher.asi copied from local'}} else { echo 'OptiPatcher.asi already exists' }"
+copy "$(SolutionDir)external\FidelityFX-SDK-v2\docs\license.md" "$(SolutionDir)x64\Release\a\Licenses\FidelityFX_v2_LICENSE.md" /Y
+copy "$(SolutionDir)OptiScaler.ini" "$(SolutionDir)x64\Release\a\" /Y
+copy "$(SolutionDir)setup_windows.bat" "$(SolutionDir)x64\Release\a\" /Y
+copy "$(SolutionDir)setup_linux.sh" "$(SolutionDir)x64\Release\a\" /Y
+md "$(SolutionDir)x64\Release\a\D3D12_Optiscaler\" 2&gt;nul
+copy "$(SolutionDir)external\directx_agility_sdk\lib\*.dll" "$(SolutionDir)x64\Release\a\D3D12_Optiscaler\" /Y
+copy "$(SolutionDir)external\directx_agility_sdk\LICENSE.txt" "$(SolutionDir)x64\Release\a\Licenses\DirectX_LICENSE.txt" /Y
 copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>powershell -NoProfile -Command "Start-Sleep -Milliseconds 1500; $date = Get-Date -Format 'yyyyMMdd_HHmmss'; $commit = (git rev-parse --short HEAD 2&gt;$null); if (-not $commit) { $commit = 'unknown' }; Set-Content -Path '$(ProjectDir)resource_build_date.h' -Value ('#define VER_BUILD_DATE \"' + $date + '\"') -Force; Set-Content -Path '$(ProjectDir)resource_build_commit.h' -Value ('#define VER_BUILD_COMMIT \"' + $commit + '\"') -Force;"</Command>
+      <Command>rmdir /s /q "$(SolutionDir)x64\Release\a\OptiScaler\" 2&gt;nul
+rmdir /s /q "$(SolutionDir)x64\Release\_tmp\" 2&gt;nul
+powershell -NoProfile -Command "Start-Sleep -Milliseconds 1500; $date = Get-Date -Format 'yyyyMMdd_HHmmss'; $commit = (git rev-parse --short HEAD 2&gt;$null); if (-not $commit) { $commit = 'unknown' }; Set-Content -Path '$(ProjectDir)resource_build_date.h' -Value ('#define VER_BUILD_DATE \"' + $date + '\"') -Force; Set-Content -Path '$(ProjectDir)resource_build_commit.h' -Value ('#define VER_BUILD_COMMIT \"' + $commit + '\"') -Force;"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDebug|x64'">
@@ -296,7 +303,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
       <AdditionalOptions>/ignore:4099</AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>powershell -Command "$timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'; $fileName = '$(OutDir)OptiScaler_' + $timestamp + '.7z'; $backupFileName = '$(OutDir)OptiScaler_' + $timestamp + '_Backup.7z'; &amp; '7z.exe' a -t7z $fileName '$(TargetPath)'; &amp; '7z.exe' a -t7z $backupFileName '$(OutDir)$(TargetName).*'"</Command>
+      <Command>powershell -NoProfile -Command "$7z = (Get-Command '7z.exe' -ErrorAction SilentlyContinue).Source; if (-not $7z) { $7z = 'C:\Program Files\7-Zip\7z.exe' }; if (-not (Test-Path $7z)) { exit 0 }; $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'; $outDir = '$(OutDir)'; $targetPath = '$(TargetPath)'; $targetName = '$(TargetName)'; $fileName = Join-Path $outDir ('OptiScaler_' + $timestamp + '.7z'); $backupFileName = Join-Path $outDir ('OptiScaler_' + $timestamp + '_Backup.7z'); Start-Process -FilePath $7z -ArgumentList @('a','-t7z',('"' + $fileName + '"'),('"' + $targetPath + '"')) -NoNewWindow -Wait; Start-Process -FilePath $7z -ArgumentList @('a','-t7z',('"' + $backupFileName + '"'),('"' + (Join-Path $outDir ($targetName + '.*')) + '"')) -NoNewWindow -Wait"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>powershell -NoProfile -Command "Start-Sleep -Milliseconds 1500; $date = Get-Date -Format 'yyyyMMdd_HHmmss'; $commit = (git rev-parse --short HEAD 2&gt;$null); if (-not $commit) { $commit = 'unknown' }; Set-Content -Path '$(ProjectDir)resource_build_date.h' -Value ('#define VER_BUILD_DATE \"' + $date + '\"') -Force; Set-Content -Path '$(ProjectDir)resource_build_commit.h' -Value ('#define VER_BUILD_COMMIT \"' + $commit + '\"') -Force;"</Command>
@@ -331,7 +338,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="hooks\CommandBuffer_StateTracker.h" />
     <ClInclude Include="inputs\FG\Streamline_Inputs_Sl1_Dx12.h" />
     <ClInclude Include="include\device_info\device_info.hpp" />
-    <ClInclude Include="inputs\FG\Upscaler_Inputs_Dx11wDx12.h" />
     <ClInclude Include="low_latency\input\input_common.h" />
     <ClInclude Include="low_latency\input\input_reflex.h" />
     <ClInclude Include="low_latency\input\input_xell.h" />
@@ -351,8 +357,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="low_latency\low_latency_tech\low_latency_tech.h" />
     <ClInclude Include="nvapi\fakenvapi\nvapi_calls.h" />
     <ClInclude Include="proxies\Streamline_Proxy.h" />
-    <ClInclude Include="shaders\magnifier\Magnifier_Common.h" />
-    <ClInclude Include="shaders\magnifier\Magnifier_Dx12.h" />
     <ClInclude Include="shaders\rcas\precompile\da_das_sharpen_Shader.h" />
     <ClInclude Include="shaders\rcas\precompile\da_das_sharpen_Shader_Dx11.h" />
     <ClInclude Include="shaders\rcas\precompile\da_das_sharpen_Shader_Vk.h" />
@@ -425,10 +429,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="upscaler_time\UpscalerTime_Dx12.h" />
     <ClInclude Include="upscaler_time\UpscalerTime_Vk.h" />
     <ClInclude Include="SysUtils.h" />
-    <ClInclude Include="with_dx12\dx11_with_dx12.h" />
-    <ClInclude Include="with_dx12\with_dx12.h" />
-    <ClInclude Include="with_dx12\dx11_with_dx12_sc.h" />
-    <ClInclude Include="misc\HiddenWindow.h" />
     <ClInclude Include="wrapped\wrapped_factory.h" />
     <ClInclude Include="include\spdlog_sink\debug_sink.h" />
     <ClInclude Include="inputs\FG\FSR3_Dx12_FG.h" />
@@ -525,6 +525,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClInclude Include="upscalers\fsr2_212\FSR2Feature_Dx12_212.h" />
     <ClInclude Include="upscalers\fsr2_212\FSR2Feature_Vk_212.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="translation\Translation.h" />
     <ClInclude Include="upscalers\fsr2\FSR2Feature.h" />
     <ClInclude Include="upscalers\fsr2\FSR2Feature_Dx11.h" />
     <ClInclude Include="upscalers\fsr2\FSR2Feature_Dx11On12.h" />
@@ -607,7 +608,6 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="hooks\Xell_Hooks.cpp" />
     <ClCompile Include="inputs\FG\Streamline_Inputs_Sl1_Dx12.cpp" />
     <ClCompile Include="include\device_info\device_info.cpp" />
-    <ClCompile Include="inputs\FG\Upscaler_Inputs_Dx11wDx12.cpp" />
     <ClCompile Include="low_latency\input\input_common.cpp" />
     <ClCompile Include="low_latency\input\input_reflex.cpp" />
     <ClCompile Include="low_latency\input\input_xell.cpp" />
@@ -647,9 +647,9 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="shaders\depth_invert\DI_Dx12.cpp" />
     <ClCompile Include="shaders\hudless_compare_compute\HCC_Dx12.cpp" />
     <ClCompile Include="shaders\hud_copy\HudCopy_Dx12.cpp" />
-    <ClCompile Include="shaders\depth_transfer\DT_Vk.cpp" />
     <ClCompile Include="shaders\magnifier\Magnifier_Common.cpp" />
     <ClCompile Include="shaders\magnifier\Magnifier_Dx12.cpp" />
+    <ClCompile Include="shaders\depth_transfer\DT_Vk.cpp" />
     <ClCompile Include="shaders\output_scaling\OS_Vk.cpp" />
     <ClCompile Include="shaders\rcas\RCAS_Common.cpp" />
     <ClCompile Include="shaders\rcas\RCAS_Vk.cpp" />
@@ -712,6 +712,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="inputs\FG\FfxApi_Dx12_FG.cpp" />
     <ClCompile Include="inputs\FfxApi_Vk.cpp" />
     <ClCompile Include="inputs\FG\Upscaler_Inputs_Dx12.cpp" />
+    <ClCompile Include="inputs\FG\Upscaler_Inputs_Dx11wDx12.cpp" />
     <ClCompile Include="inputs\XeSS_Base.cpp" />
     <ClCompile Include="inputs\XeSS_Common.cpp" />
     <ClCompile Include="inputs\XeSS_Dbg.cpp" />
@@ -750,6 +751,7 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="upscalers\IFeature_Dx11wDx12.cpp" />
     <ClInclude Include="upscalers\IFeature_Dx11wDx12.h" />
     <ClCompile Include="Config.cpp" />
+    <ClCompile Include="translation\Translation.cpp" />
     <ClCompile Include="upscalers\fsr2\FSR2Feature.cpp" />
     <ClCompile Include="upscalers\fsr2\FSR2Feature_Dx11.cpp" />
     <ClCompile Include="upscalers\fsr2\FSR2Feature_Dx11On12.cpp" />
@@ -820,6 +822,23 @@ copy NUL "$(SolutionDir)x64\Release\a\!! EXTRACT ALL FILES TO GAME FOLDER !!" /Y
     <ClCompile Include="version_check.cpp" />
     <ClCompile Include="inputs\XeSS_Debug.cpp" />
     <ClCompile Include="inputs\XeSS_Dx12.cpp" />
+    <ClInclude Include="OptiTexts.h" />
+    <ClInclude Include="include\fsr-rr\ffx_denoiser.h" />
+    <ClInclude Include="include\nvapi\NvApiDriverSettings.h" />
+    <ClInclude Include="include\nvapi\nvapi.h" />
+    <ClInclude Include="shaders\fsrd_preprocess\FSRDShaderUtils.h" />
+    <ClInclude Include="shaders\fsrd_preprocess\FSRDShaderData.h" />
+    <ClInclude Include="shaders\fsrd_preprocess\FSRDPreprocessor_Dx12.h" />
+    <ClInclude Include="shaders\fsrd_preprocess\precompile\FSRDInputConv_Shader.h" />
+    <ClInclude Include="shaders\fsrd_preprocess\precompile\FSRDOutputComp_Shader.h" />
+    <ClInclude Include="shaders\fsrd_preprocess\precompile\FSRDFloorSeed_Shader.h" />
+    <ClInclude Include="shaders\fsrd_preprocess\precompile\FSRDFloor_Shader.h" />
+    <ClInclude Include="shaders\fsrd_preprocess\precompile\FSRDInputConv_Shader.cso.h" />
+    <ClInclude Include="upscalers\fsr31\FSRDFeature_Dx12.h" />
+    <ClInclude Include="upscalers\fsr31\FSR31Feature_Dx12.h" />
+    <ClCompile Include="shaders\fsrd_preprocess\FSRDPreprocessor_Dx12.cpp" />
+    <ClCompile Include="upscalers\fsr31\FSRDFeature_Dx12.cpp" />
+    <ClCompile Include="upscalers\fsr31\FSR31Feature_Dx12.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OptiScaler.rc" />

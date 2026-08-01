@@ -224,7 +224,7 @@ xell_result_t InputXeLL::GetLastPresentStartFrameId(xell_input_handle_t context,
     if (!p_frame_id)
         return XELL_RESULT_ERROR_INVALID_ARGUMENT;
 
-    *p_frame_id = (uint32_t) InputCommon::get_last_present_start_frame_id();
+    *p_frame_id = InputCommon::get_last_present_start_frame_id();
 
     return XELL_RESULT_SUCCESS;
 }
@@ -317,7 +317,7 @@ xell_result_t InputXeLL::SetFgEnabled(xell_input_handle_t context, uint32_t para
     return InputCommon::pass_xellSetFgEnabled(context->inputContext, param1, param2);
 }
 
-xell_result_t InputXeLL::SetGeneratedFramesCount(xell_input_handle_t context, uint32_t frameId, uint32_t framesCount)
+xell_result_t InputXeLL::SetGeneratedFramesCount(xell_input_handle_t context, uint32_t param1, uint32_t framesCount)
 {
     // TODO: figure out params and impl
     // TODO: store framesCount for the SleepParams::fg_multiplier
@@ -325,10 +325,10 @@ xell_result_t InputXeLL::SetGeneratedFramesCount(xell_input_handle_t context, ui
     if (!context)
         return XELL_RESULT_ERROR_INVALID_CONTEXT;
 
-    context->setGeneratedFramesCountFrameId = frameId;
+    context->setGeneratedFramesCountParam1 = param1;
     context->framesCount = framesCount;
 
-    return InputCommon::pass_xellSetGeneratedFramesCount(context->inputContext, frameId, framesCount);
+    return InputCommon::pass_xellSetGeneratedFramesCount(context->inputContext, param1, framesCount);
 }
 
 #ifdef LOW_LATENCY_INPUTS
@@ -391,10 +391,10 @@ XELL_EXPORT xell_result_t xellSetFgEnabled(xell_context_handle_t context, uint32
     return InputXeLL::SetFgEnabled((InputXeLL::xell_input_handle_t) context, param1, param2);
 }
 
-XELL_EXPORT xell_result_t xellSetGeneratedFramesCount(xell_context_handle_t context, uint32_t frameId,
+XELL_EXPORT xell_result_t xellSetGeneratedFramesCount(xell_context_handle_t context, uint32_t param1,
                                                       uint32_t framesCount)
 {
-    return InputXeLL::SetGeneratedFramesCount((InputXeLL::xell_input_handle_t) context, frameId, framesCount);
+    return InputXeLL::SetGeneratedFramesCount((InputXeLL::xell_input_handle_t) context, param1, framesCount);
 }
 
 XELL_EXPORT xell_result_t xellGetLastPresentStartFrameId(xell_context_handle_t context, uint32_t* p_frame_id)

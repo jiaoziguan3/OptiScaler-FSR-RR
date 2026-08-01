@@ -9,6 +9,7 @@
 #include <set>
 #include <deque>
 #include <mutex>
+#include <sl.h>
 #include <sl_dlss_g.h>
 #include <vulkan/vulkan.h>
 #include <ankerl/unordered_dense.h>
@@ -177,6 +178,7 @@ class State
     std::string NGX_OTA_Dlssd;
 
     feature_version streamlineVersion = { 0, 0, 0 };
+    sl::Constants slLastConstants {};
 
     // Has value when Opti was able to hook sl and the game set DLSSG options
     std::optional<int> dlssgMfgMax = std::nullopt;
@@ -196,6 +198,10 @@ class State
 
     // for realtime changes
     ankerl::unordered_dense::map<unsigned int, bool> changeBackend;
+
+    // Force auto exposure when an exposure texture is missing
+    bool AutoExposure = false;
+
     Upscaler newBackend = Upscaler::Reset;
 
     // XeSS debug stuff
@@ -250,6 +256,15 @@ class State
     std::vector<const char*> ffxFGVersionNames {};
     std::vector<uint64_t> ffxFGVersionIds {};
     std::optional<uint32_t> currentFsr4Preset {};
+
+    // FSR-RR
+    std::vector<const char*> ffxDenoiserVersionNames {};
+    std::vector<uint64_t> ffxDenoiserVersionIds {};
+    feature_version ffxDenoiserUpscalerVersion {};
+    std::vector<int> ffxDenoiserModes;
+    std::unordered_map<int, const char*> ffxDenoiserModeNames;
+    std::vector<uint64_t> ffxDenoiserDebugModes;
+    std::unordered_map<uint64_t, const char*> ffxDenoiserDebugModeNames;
 
     // Linux checks
     bool isRunningOnLinux = false;

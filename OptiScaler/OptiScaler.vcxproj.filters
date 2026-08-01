@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Header Files">
@@ -14,6 +14,9 @@
     </Filter>
     <Filter Include="Config">
       <UniqueIdentifier>{eb352600-7864-4906-a7f8-b065f137cc80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Translation">
+      <UniqueIdentifier>{c1a2b3d4-5678-9abc-def0-123456789abc}</UniqueIdentifier>
     </Filter>
     <Filter Include="NVNGX">
       <UniqueIdentifier>{5942b1ae-09d7-4444-8936-97ee514249b0}</UniqueIdentifier>
@@ -31,6 +34,9 @@
   <ItemGroup>
     <ClInclude Include="Config.h">
       <Filter>Config</Filter>
+    </ClInclude>
+    <ClInclude Include="translation\Translation.h">
+      <Filter>Translation</Filter>
     </ClInclude>
     <ClInclude Include="Util.h">
       <Filter>Util</Filter>
@@ -818,6 +824,9 @@
     <ClInclude Include="shaders\hudless_compare_compute\HCC_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="low_latency\input\input_uell.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="hooks\Amdxc64_Hooks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -884,43 +893,64 @@
     <ClInclude Include="include\device_info\device_info.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="low_latency\input\input_uell.h">
+    <ClInclude Include="OptiTexts.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="with_dx12\dx11_with_dx12.h">
+    <ClInclude Include="include\fsr-rr\ffx_denoiser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="with_dx12\with_dx12.h">
+    <ClInclude Include="include\nvapi\NvApiDriverSettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="shaders\magnifier\Magnifier_Common.h">
+    <ClInclude Include="include\nvapi\nvapi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="shaders\magnifier\Magnifier_Dx12.h">
+    <ClInclude Include="shaders\fsrd_preprocess\FSRDShaderUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="low_latency\input\input_uell.h">
+    <ClInclude Include="shaders\fsrd_preprocess\FSRDShaderData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="with_dx12\dx11_with_dx12.h">
+    <ClInclude Include="shaders\fsrd_preprocess\FSRDPreprocessor_Dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="with_dx12\with_dx12.h">
+    <ClInclude Include="shaders\fsrd_preprocess\precompile\FSRDInputConv_Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="with_dx12\dx11_with_dx12_sc.h">
+    <ClInclude Include="shaders\fsrd_preprocess\precompile\FSRDOutputComp_Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="misc\HiddenWindow.h">
+    <ClInclude Include="shaders\fsrd_preprocess\precompile\FSRDFloorSeed_Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="inputs\FG\Upscaler_Inputs_Dx11wDx12.h">
+    <ClInclude Include="shaders\fsrd_preprocess\precompile\FSRDFloor_Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="shaders\fsrd_preprocess\precompile\FSRDInputConv_Shader.cso.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="upscalers\fsr31\FSRDFeature_Dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="upscalers\fsr31\FSR31Feature_Dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClCompile Include="shaders\fsrd_preprocess\FSRDPreprocessor_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="upscalers\fsr31\FSRDFeature_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="upscalers\fsr31\FSR31Feature_Dx12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">
       <Filter>Config</Filter>
+    </ClCompile>
+    <ClCompile Include="translation\Translation.cpp">
+      <Filter>Translation</Filter>
     </ClCompile>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="Util.cpp">
@@ -1382,6 +1412,9 @@
     <ClCompile Include="shaders\rcas\RCAS_Common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="low_latency\input\input_uell.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="hooks\Amdxc64_Hooks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1437,36 +1470,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="include\device_info\device_info.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="low_latency\input\input_uell.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="with_dx12\dx11_with_dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="with_dx12\with_dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="with_dx12\dx11_with_dx12_sc.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="inputs\FG\Upscaler_Inputs_Dx11wDx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="low_latency\input\input_uell.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="with_dx12\dx11_with_dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="with_dx12\with_dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="shaders\magnifier\Magnifier_Dx12.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="shaders\magnifier\Magnifier_Common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -11,6 +11,7 @@
 #include "upscalers/fsr2/FSR2Feature_Dx12.h"
 #include "upscalers/fsr2_212/FSR2Feature_Dx12_212.h"
 #include "upscalers/ffx/FFXFeature_Dx12.h"
+#include "upscalers/fsr31/FSRDFeature_Dx12.h"
 #include "upscalers/xess/XeSSFeature_Dx12.h"
 #include "FeatureProvider_Dx11.h"
 #include <misc/IdentifyGpu.h>
@@ -66,6 +67,19 @@ bool FeatureProvider_Dx12::GetFeature(Upscaler upscaler, UINT handleId, NVSDK_NG
             upscaler = Upscaler::FSR21;
             break;
         }
+
+    case Upscaler::FSR_RR:
+        if (!FfxApiProxy::IsDenoiserReady())
+            FfxApiProxy::InitFfxDx12();
+        if (FfxApiProxy::IsDenoiserReady())
+        {
+            *feature = std::make_unique<FSRDFeatureDx12>(handleId, parameters);
+        }
+        else
+        {
+            return false;
+        }
+        break;
 
     default:
         *feature = std::make_unique<FSR2FeatureDx12_212>(handleId, parameters);
@@ -129,7 +143,7 @@ bool FeatureProvider_Dx12::ChangeFeature(Upscaler upscaler, ID3D12Device* device
             // Use given params if using DLSS passthrough
             const bool isPassthrough = state.newBackend == Upscaler::DLSSD || state.newBackend == Upscaler::DLSS;
 
-            contextData->createParams = isPassthrough ? parameters : GetNGXParameters("OptiDx12", false);
+            contextData->createParams = isPassthrough ? parameters : GetNGXParameters(API::DX12, false);
             contextData->createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
             contextData->createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
             contextData->createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());

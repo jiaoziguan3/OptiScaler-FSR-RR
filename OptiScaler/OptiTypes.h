@@ -63,6 +63,7 @@ enum class Upscaler
     DLSS, // "dlss", used for the DLSS upscaler backend
 
     DLSSD, // "dlssd", used for the DLSS-D/Ray Reconstruction upscaler+denoiser backend
+    FSR_RR, // "fsr-rr", AMD FSR Ray Regeneration denoiser backend for DLSS-RR
     Reset
 };
 
@@ -96,6 +97,14 @@ enum class FSR4Support : uint8_t
     None = 0,
     FP8 = 1,
     INT8 = 2,
+    Count
+};
+
+enum class Fsr4Provider
+{
+    Auto,
+    SDK,
+    Driver,
     Count
 };
 

@@ -19,7 +19,8 @@ class LowLatency
     SleepMode last_sleep_mode {};
 
     // Once set, it will be used for all init attempts
-    LowLatencyMode forced_low_latency_tech = LowLatencyMode::None;
+    void* forced_low_latency_context = nullptr;
+    LowLatencyMode forced_low_latency_tech = LowLatencyMode::LatencyFlex;
 
     void update_effective_fg_state();
     void update_enabled_override();
@@ -49,7 +50,7 @@ class LowLatency
         }
     }
     bool get_low_latency_tech_context(void** low_latency_tech_context, LowLatencyMode* low_latency_tech);
-    bool set_low_latency_tech_mode(IUnknown* device, LowLatencyMode low_latency_tech);
+    bool set_low_latency_tech_context(void* low_latency_tech_context, LowLatencyMode low_latency_tech);
 
     bool is_low_latency_enabled();
 

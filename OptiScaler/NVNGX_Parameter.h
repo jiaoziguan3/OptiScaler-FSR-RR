@@ -49,7 +49,7 @@ static NVSDK_NGX_Result NVSDK_CONV NVSDK_NGX_DLSS_GetStatsCallback(NVSDK_NGX_Par
 
 /// @brief Initializes an NGX parameter object with supported feature flags (DLSS, FrameGen), version info, and default
 /// values.
-void InitNGXParameters(NVSDK_NGX_Parameter* InParams);
+void InitNGXParameters(NVSDK_NGX_Parameter* InParams, API api);
 
 /// @brief Internal variant structure holding the value of a single NGX parameter.
 struct Parameter
@@ -187,13 +187,13 @@ struct Parameter
 /// parameters.
 struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 {
-    std::string Name;
+    API Api;
 
 #ifdef ENABLE_ENCAPSULATED_PARAMS
     NVSDK_NGX_Parameter* OriginalParam = nullptr;
 #endif // ENABLE_ENCAPSULATED_PARAMS
 
-    NVNGX_Parameters(std::string_view name, bool isPersistent);
+    NVNGX_Parameters(API api, bool isPersistent);
 
     void Set(const char* key, unsigned long long value) override;
     void Set(const char* key, float value) override;
@@ -237,13 +237,43 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
  * @brief Allocates and populates a new custom NGX param map. The persistence flag indicates
  * whether the table should be destroyed when NGX DestroyParameters() is used.
  */
-NVNGX_Parameters* GetNGXParameters(std::string_view name, bool isPersistent);
+NVNGX_Parameters* GetNGXParameters(API api, bool isPersistent);
 
 /**
  * @brief Sets a custom tracking tag to indicate the memory management strategy required by
  * the table, indicated by NGX_AllocTypes.
  */
 void SetNGXParamAllocType(NVSDK_NGX_Parameter& params, uint32_t allocType);
+
+/**
+ * @brief Retrieves a value from NGX parameters, provided the feature is toggled on.
+ * @return True if 'isEnabled' is true AND the NGX parameter was successfully retrieved.
+ */
+template <typename T>
+static bool TryGetToggleableNGXParam(const NVSDK_NGX_Parameter& ngxParams, const char* key,
+                                     const CustomOptional<bool>& isEnabled, T& outValue)
+{
+    return isEnabled.value_or_default() && (ngxParams.Get(key, &outValue) == NVSDK_NGX_Result_Success);
+}
+
+/**
+ * @brief Attempts to retrieve a pointer-type NGX parameter.
+ * @tparam T Must be a pointer type (e.g., ID3D12Resource*).
+ * @return True on success.
+ */
+template <typename T>
+    requires std::is_pointer_v<T>
+static bool TryGetNGXVoidPointer(const NVSDK_NGX_Parameter& ngxParams, const char* key, T& outValue)
+{
+    NVSDK_NGX_Result result = ngxParams.Get(key, &outValue);
+
+    // Fallback
+    if (result != NVSDK_NGX_Result_Success)
+        result = ngxParams.Get(key, reinterpret_cast<void**>(&outValue));
+
+    return (result == NVSDK_NGX_Result_Success) && outValue != nullptr;
+}
+
 /**
  * @brief Attempts to safely delete an NGX parameter table. Dynamically allocated NGX tables use the NGX API.
  * OptiScaler tables use delete. Persistent tables are not freed.

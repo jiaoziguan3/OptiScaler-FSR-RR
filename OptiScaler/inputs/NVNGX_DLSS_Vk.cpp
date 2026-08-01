@@ -183,7 +183,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_Init_Ext2(
     if (InFeatureInfo != nullptr && InSDKVersion > 0x0000013)
         State::Instance().NVNGX_Logger = InFeatureInfo->LoggingInfo;
 
-    if (State::Instance().nvngxVkInited)
+    if (State::Instance().nvngxVkInited && InInstance == vkInstance && InDevice == vkDevice && InPD == vkPD)
     {
         LOG_WARN("NVNGX already inited");
         return NVSDK_NGX_Result_Success;
@@ -482,16 +482,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetParameters(NVSDK_NGX_Paramete
 
         if (result == NVSDK_NGX_Result_Success)
         {
-            InitNGXParameters(*OutParameters);
+            InitNGXParameters(*OutParameters, API::Vulkan);
             SetNGXParamAllocType(*(*OutParameters), NGX_AllocTypes::NVPersistent);
             return result;
         }
     }
 
     // Get custom parameters if using custom backend
-    static NVNGX_Parameters oldParams = NVNGX_Parameters("OptiVk", true);
+    static NVNGX_Parameters oldParams = NVNGX_Parameters(API::Vulkan, true);
     *OutParameters = &oldParams;
-    InitNGXParameters(*OutParameters);
+    InitNGXParameters(*OutParameters, API::Vulkan);
 
     LOG_DEBUG("Returning custom Opti parameters");
 
@@ -705,7 +705,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_AllocateParameters(NVSDK_NGX_Par
         }
     }
 
-    auto* params = new NVNGX_Parameters("OptiVk", false);
+    auto* params = new NVNGX_Parameters(API::Vulkan, false);
     *OutParameters = params;
 
     return NVSDK_NGX_Result_Success;
@@ -781,15 +781,15 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetCapabilityParameters(NVSDK_NG
         if (result == NVSDK_NGX_Result_Success)
         {
             // Init external NGX table with current configuration and mark as dynamic+external
-            InitNGXParameters(*OutParameters);
+            InitNGXParameters(*OutParameters, API::Vulkan);
             SetNGXParamAllocType(*(*OutParameters), NGX_AllocTypes::NVDynamic);
             return result;
         }
     }
 
     // Get custom parameters if using custom backend
-    auto& params = *(new NVNGX_Parameters("OptiVk", false));
-    InitNGXParameters(&params);
+    auto& params = *(new NVNGX_Parameters(API::Vulkan, false));
+    InitNGXParameters(&params, API::Vulkan);
     *OutParameters = &params;
 
     return NVSDK_NGX_Result_Success;
@@ -802,7 +802,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_PopulateParameters_Impl(NVSDK_NG
     if (InParameters == nullptr)
         return NVSDK_NGX_Result_Fail;
 
-    InitNGXParameters(InParameters);
+    InitNGXParameters(InParameters, API::Vulkan);
 
     Nvngx_FG::VULKAN_PopulateParameters_Impl(InParameters);
 

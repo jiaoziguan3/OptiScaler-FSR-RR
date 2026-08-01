@@ -55,7 +55,7 @@ bool XeFG_Dx12::CreateSwapchainContext(ID3D12Device* device)
         if (result != XEFG_SWAPCHAIN_RESULT_SUCCESS)
         {
             LOG_ERROR("D3D12CreateContext error: {} ({})", magic_enum::enum_name(result), (UINT) result);
-            return false;
+            return result;
         }
 
         LOG_INFO("XeFG context created");
@@ -67,50 +67,34 @@ bool XeFG_Dx12::CreateSwapchainContext(ID3D12Device* device)
             LOG_ERROR("SetLoggingCallback error: {} ({})", magic_enum::enum_name(result), (UINT) result);
         }
 
-#ifndef LOW_LATENCY_INPUTS
-        // Force fakenvapi to create XeLL for us
-        if (fakenvapi::forceMode(device, LowLatencyMode::XeLL))
-        {
-            result = XeFGProxy::SetLatencyReduction()(_swapChainContext, fakenvapi::getCurrentContext());
+        // if (XeLLProxy::Context() == nullptr)
+        XeLLProxy::CreateContext(device);
 
-            if (result != XEFG_SWAPCHAIN_RESULT_SUCCESS)
-            {
-                LOG_ERROR("SetLatencyReduction error: {} ({})", magic_enum::enum_name(result), (UINT) result);
-                return false;
-            }
-        }
-#else
-        InputXeLL::xell_input_handle_t localXellContext;
-        if (InputXeLL::D3D12CreateContext(device, &localXellContext) == XELL_RESULT_SUCCESS)
+        if (XeLLProxy::Context() != nullptr)
         {
-            localXellContext->inputContext.localContext = true; // We created this context
-
             xell_sleep_params_t sleepParams = {};
             sleepParams.bLowLatencyMode = true;
             sleepParams.bLowLatencyBoost = false;
             sleepParams.minimumIntervalUs = 0;
 
-            auto xellResult = InputXeLL::SetSleepMode(localXellContext, &sleepParams);
+            auto xellResult = XeLLProxy::SetSleepMode()(XeLLProxy::Context(), &sleepParams);
             if (xellResult != XELL_RESULT_SUCCESS)
             {
                 LOG_ERROR("SetSleepMode error: {} ({})", magic_enum::enum_name(xellResult), (UINT) xellResult);
-                return false;
+                return result;
             }
 
-            result = XeFGProxy::SetLatencyReduction()(_swapChainContext, (xell_context_handle_t) localXellContext);
+            auto fnaResult = fakenvapi::setModeAndContext(XeLLProxy::Context(), LowLatencyMode::XeLL);
+            LOG_DEBUG("fakenvapi::setModeAndContext: {}", fnaResult);
+
+            result = XeFGProxy::SetLatencyReduction()(_swapChainContext, XeLLProxy::Context());
 
             if (result != XEFG_SWAPCHAIN_RESULT_SUCCESS)
             {
                 LOG_ERROR("SetLatencyReduction error: {} ({})", magic_enum::enum_name(result), (UINT) result);
-                return false;
+                return result;
             }
-        }
-#endif
-        else
-        {
-            LOG_ERROR("Couldn't create XeLL");
-            return false;
-        }
+        };
 
         createResult = true;
 
@@ -169,6 +153,9 @@ bool XeFG_Dx12::DestroySwapchainContext()
         }
         else
         {
+            if (XeLLProxy::Context() != nullptr)
+                XeLLProxy::DestroyXeLLContext();
+
             State::Instance().currentFGSwapchain = nullptr;
         }
     }
@@ -636,7 +623,8 @@ void XeFG_Dx12::Activate()
         nativeAA = currentFeature->RenderWidth() == currentFeature->DisplayWidth();
 
     if (_swapChainContext != nullptr && _fgContext != nullptr && !_isActive &&
-        (IsLowResMV() || nativeAA || Config::Instance()->FGXeFGIgnoreInitChecks.value_or_default()))
+        (IsLowResMV() || nativeAA || (State::Instance().gameQuirks & GameQuirk::ForceFGRenderSizeMVs) ||
+         Config::Instance()->FGXeFGIgnoreInitChecks.value_or_default()))
     {
         auto result = XeFGProxy::SetEnabled()(_swapChainContext, true);
 
@@ -666,8 +654,6 @@ void XeFG_Dx12::Deactivate()
                 _gameCommandQueue->ExecuteCommandLists(1, (ID3D12CommandList**) &_uiCommandList[fIndex]);
             else
                 LOG_ERROR("_uiCommandList[{}]->Close() error: {:X}", fIndex, (UINT) closeResult);
-
-            _gameCommandQueue->Signal(_uiFence, _uiAllocatorFenceValues[fIndex]);
 
             _uiCommandListResetted[fIndex] = false;
         }
@@ -1121,8 +1107,6 @@ void XeFG_Dx12::ReleaseObjects()
 
 void XeFG_Dx12::CreateObjects(ID3D12Device* InDevice)
 {
-    _device = InDevice;
-
     if (_uiCommandAllocator[0] != nullptr)
         return;
 
@@ -1168,26 +1152,6 @@ void XeFG_Dx12::CreateObjects(ID3D12Device* InDevice)
                 break;
             }
 
-            if (_uiFence == nullptr)
-            {
-                result = InDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_uiFence));
-                if (FAILED(result))
-                {
-                    LOG_ERROR("Create UI fence failed: {:X}", (UINT) result);
-                    break;
-                }
-            }
-
-            if (_uiFenceEvent == nullptr)
-            {
-                _uiFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-                if (_uiFenceEvent == nullptr)
-                {
-                    LOG_ERROR("CreateEvent for UI fence failed");
-                    break;
-                }
-            }
-
             result =
                 InDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&_scCommandAllocator[i]));
             if (result != S_OK)
@@ -1216,26 +1180,6 @@ void XeFG_Dx12::CreateObjects(ID3D12Device* InDevice)
             {
                 LOG_ERROR("_scCommandList[{}]->Close: {:X}", i, (unsigned long) result);
                 break;
-            }
-
-            if (_scFence == nullptr)
-            {
-                result = InDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&_scFence));
-                if (FAILED(result))
-                {
-                    LOG_ERROR("Create SC fence failed: {:X}", (UINT) result);
-                    break;
-                }
-            }
-
-            if (_scFenceEvent == nullptr)
-            {
-                _scFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-                if (_scFenceEvent == nullptr)
-                {
-                    LOG_ERROR("CreateEvent for SC fence failed");
-                    break;
-                }
             }
         }
 
@@ -1326,8 +1270,6 @@ bool XeFG_Dx12::Present()
                 _gameCommandQueue->ExecuteCommandLists(1, (ID3D12CommandList**) &_uiCommandList[fIndex]);
             else
                 LOG_ERROR("_uiCommandList[{}]->Close() error: {:X}", fIndex, (UINT) closeResult);
-
-            _gameCommandQueue->Signal(_uiFence, _uiAllocatorFenceValues[fIndex]);
 
             _uiCommandListResetted[fIndex] = false;
         }
@@ -1652,6 +1594,7 @@ bool XeFG_Dx12::ReleaseSwapchain(HWND hwnd)
     }
 
     ReleaseObjects();
+    XeLLProxy::DestroyXeLLContext();
 
     if (Config::Instance()->FGUseMutexForSwapchain.value_or_default())
     {

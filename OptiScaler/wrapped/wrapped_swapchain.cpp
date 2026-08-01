@@ -19,10 +19,6 @@
 #include <misc/IdentifyGpu.h>
 #include <hooks/Xell_Hooks.h>
 
-#ifdef LOW_LATENCY_INPUTS
-#include <low_latency/input/input_antilag2.h>
-#endif
-
 #ifdef DXGI_DEBUG_ENABLED
 #include <magic_enum.hpp>
 #include <dxgidebug.h>
@@ -334,13 +330,6 @@ static HRESULT LocalPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
         // Draw overlay
         MenuOverlayDx::Present(pSwapChain, SyncInterval, Flags, pPresentParameters, pDevice, hWnd, isUWP);
 
-#ifdef LOW_LATENCY_INPUTS
-        if (State::Instance().activeFgOutput == FGOutput::FSRFG)
-        {
-            auto fgIsActive = fg != nullptr && fg->IsActive() && !fg->IsPaused();
-            InputAntiLag2::injectAl2Context(pSwapChain, fgIsActive);
-        }
-#else
         if (State::Instance().activeFgOutput == FGOutput::FSRFG || State::Instance().activeFgOutput == FGOutput::XeFG)
         {
             LOG_DEBUG("Calling fakenvapi");
@@ -358,7 +347,6 @@ static HRESULT LocalPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 
             fakenvapi::reportFGPresent(pSwapChain, fgIsActive, isInterpolated);
         }
-#endif
 
         _frameCounter++;
         State::Instance().frameCount = _frameCounter;

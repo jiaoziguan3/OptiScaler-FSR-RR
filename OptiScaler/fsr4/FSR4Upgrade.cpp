@@ -49,9 +49,7 @@ HRESULT STDMETHODCALLTYPE AmdExtFfxApi::UpdateFfxApiProvider(void* pData, uint32
         GetModuleFileNameW(callerModule, sdkDllPath, MAX_PATH);
 
         Util::version_t sdkVersion;
-        Util::GetFileVersion(sdkDllPath, &sdkVersion, nullptr);
-
-        LOG_TRACE("sdkVersion: {}.{}.{}.{}", sdkVersion.major, sdkVersion.minor, sdkVersion.patch, sdkVersion.reserved);
+        Util::GetFileVersion(sdkDllPath, nullptr, &sdkVersion);
 
         sdkSupportsInt8 = sdkVersion >= Util::version_t(4, 1, 1, 0);
         IdentifyGpu::updateInt8Support(sdkSupportsInt8, amdxcffx64SupportsInt8);
@@ -59,13 +57,37 @@ HRESULT STDMETHODCALLTYPE AmdExtFfxApi::UpdateFfxApiProvider(void* pData, uint32
 
     if (o_UpdateFfxApiProvider == nullptr)
     {
-        FSR4Upgrade::moduleAmdxcffx64 = nullptr;
-        HMODULE memModule = nullptr;
-        auto optiPath = Config::Instance()->MainDllPath.value();
-        Util::LoadProxyLibrary(L"amdxcffx64.dll", L"", optiPath, &memModule, &FSR4Upgrade::moduleAmdxcffx64);
+        // Check if user selected SDK-only mode
+        if (Config::Instance()->Fsr4ProviderPath.value_or_default() == Fsr4Provider::SDK)
+        {
+            LOG_INFO("FSR4 Provider set to SDK, skipping amdxcffx64.dll");
+            return E_NOINTERFACE;
+        }
 
-        if (FSR4Upgrade::moduleAmdxcffx64 == nullptr && memModule != nullptr)
-            FSR4Upgrade::moduleAmdxcffx64 = memModule;
+        FSR4Upgrade::moduleAmdxcffx64 = nullptr;
+
+        // Prefer user-specified amdxcffx64.dll path
+        if (Config::Instance()->Fsr4Amdxcffx64Path.has_value())
+        {
+            auto customPath = Config::Instance()->Fsr4Amdxcffx64Path.value();
+            LOG_INFO(L"Trying to load amdxcffx64.dll from custom path: {}", customPath);
+            FSR4Upgrade::moduleAmdxcffx64 = NtdllProxy::LoadLibraryExW_Ldr(customPath.c_str(), NULL, 0);
+
+            if (FSR4Upgrade::moduleAmdxcffx64 != nullptr)
+                LOG_INFO(L"amdxcffx64.dll loaded from custom path: {}", customPath);
+            else
+                LOG_WARN(L"Failed to load amdxcffx64.dll from custom path: {}", customPath);
+        }
+
+        if (FSR4Upgrade::moduleAmdxcffx64 == nullptr)
+        {
+            HMODULE memModule = nullptr;
+            auto optiPath = Config::Instance()->MainDllPath.value();
+            Util::LoadProxyLibrary(L"amdxcffx64.dll", L"", optiPath, &memModule, &FSR4Upgrade::moduleAmdxcffx64);
+
+            if (FSR4Upgrade::moduleAmdxcffx64 == nullptr && memModule != nullptr)
+                FSR4Upgrade::moduleAmdxcffx64 = memModule;
+        }
 
         if (FSR4Upgrade::moduleAmdxcffx64 == nullptr)
         {

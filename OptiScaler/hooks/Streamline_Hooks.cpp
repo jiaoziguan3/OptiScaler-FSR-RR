@@ -238,6 +238,36 @@ sl::Result StreamlineHooks::hkslSetTag(const sl::ViewportHandle& viewport, const
         return o_slSetTag(viewport, tags, numTags, cmdBuffer);
     }
 
+    if (State::Instance().activeFgInput == FGInput::DLSSG &&
+        State::Instance().gameQuirks[GameQuirk::IgnoreTagsWithoutHudlessForFG])
+    {
+        bool hasDepth = false;
+        bool hasMVs = false;
+        bool hasHudless = false;
+
+        for (uint32_t i = 0; i < numTags; i++)
+        {
+            if (tags[i].resource == nullptr || tags[i].resource->native == nullptr)
+                continue;
+
+            if (tags[i].type == sl::kBufferTypeDepth)
+                hasDepth = true;
+
+            if (tags[i].type == sl::kBufferTypeMotionVectors)
+                hasMVs = true;
+
+            if (tags[i].type == sl::kBufferTypeHUDLessColor)
+                hasHudless = true;
+        }
+
+        // Try to skip a DLSS call
+        if (hasDepth && hasMVs && !hasHudless)
+        {
+            LOG_DEBUG("Skipping the FG tagging of potential DLSS resources");
+            return o_slSetTag(viewport, tags, numTags, cmdBuffer);
+        }
+    }
+
     for (uint32_t i = 0; i < numTags; i++)
     {
         const auto typeEnum = (BufferType) tags[i].type;
@@ -271,7 +301,9 @@ sl::Result StreamlineHooks::hkslSetTag(const sl::ViewportHandle& viewport, const
             LOG_TRACE("Tagging resource of type: {}", magic_enum::enum_name(typeEnum));
 
             // Workaround a bug in the FSR 3 MFG mod where it composits the UI incorrectly
-            if (tags[i].type == sl::kBufferTypeUIColorAndAlpha && tags[i].resource->native && Nvngx_FG::isMFG())
+            auto nvngxFgApi = renderApi == sl::RenderAPI::eD3D12 ? API::DX12 : API::NotSelected;
+            if (tags[i].type == sl::kBufferTypeUIColorAndAlpha && tags[i].resource->native &&
+                Nvngx_FG::getMaxFakeFramesCount(nvngxFgApi) > 1)
             {
                 tags[i].resource->native = nullptr;
             }
@@ -303,6 +335,36 @@ sl::Result StreamlineHooks::hkslSetTagForFrame(const sl::FrameToken& frame, cons
 
     LOG_DEBUG("frameIndex: {}", static_cast<uint32_t>(frame));
 
+    if (State::Instance().activeFgInput == FGInput::DLSSG &&
+        State::Instance().gameQuirks[GameQuirk::IgnoreTagsWithoutHudlessForFG])
+    {
+        bool hasDepth = false;
+        bool hasMVs = false;
+        bool hasHudless = false;
+
+        for (uint32_t i = 0; i < numResources; i++)
+        {
+            if (resources[i].resource == nullptr || resources[i].resource->native == nullptr)
+                continue;
+
+            if (resources[i].type == sl::kBufferTypeDepth)
+                hasDepth = true;
+
+            if (resources[i].type == sl::kBufferTypeMotionVectors)
+                hasMVs = true;
+
+            if (resources[i].type == sl::kBufferTypeHUDLessColor)
+                hasHudless = true;
+        }
+
+        // Try to skip a DLSS call
+        if (hasDepth && hasMVs && !hasHudless)
+        {
+            LOG_DEBUG("Skipping the FG tagging of potential DLSS resources");
+            return o_slSetTagForFrame(frame, viewport, resources, numResources, cmdBuffer);
+        }
+    }
+
     for (uint32_t i = 0; i < numResources; i++)
     {
         const auto typeEnum = (BufferType) resources[i].type;
@@ -327,8 +389,9 @@ sl::Result StreamlineHooks::hkslSetTagForFrame(const sl::FrameToken& frame, cons
             LOG_TRACE("Tagging resource of type: {}", magic_enum::enum_name(typeEnum));
 
             // Workaround a bug in the FSR 3 MFG mod where it composits the UI incorrectly
+            auto nvngxFgApi = renderApi == sl::RenderAPI::eD3D12 ? API::DX12 : API::NotSelected;
             if (resources[i].type == sl::kBufferTypeUIColorAndAlpha && resources[i].resource->native &&
-                Nvngx_FG::isMFG())
+                Nvngx_FG::getMaxFakeFramesCount(nvngxFgApi) > 1)
             {
                 resources[i].resource->native = nullptr;
             }
@@ -2093,6 +2156,8 @@ void StreamlineHooks::hookCommon(HMODULE slCommon)
 }
 
 bool StreamlineHooks::isInterposerHooked() { return o_slInit != nullptr || o_slInit_sl1 != nullptr; }
+
+bool StreamlineHooks::isSetConstantsHooked() { return o_slSetConstants != nullptr; }
 
 bool StreamlineHooks::isDlssHooked() { return o_dlss_slGetPluginFunction != nullptr; }
 

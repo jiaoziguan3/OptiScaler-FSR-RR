@@ -161,6 +161,8 @@ class StreamlineHooks
     static void unhookCommon();
     static void hookCommon(HMODULE slCommon);
 
+    static bool isSetConstantsHooked();
+
     static bool isInterposerHooked();
     static bool isDlssHooked();
     static bool isDlssgHooked();

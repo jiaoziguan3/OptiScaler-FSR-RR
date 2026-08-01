@@ -1,0 +1,396 @@
+// FSR-RR Conversion & Packing Shader
+#include "FSRDPreprocessCommon.hlsli"
+
+#define MainRS \
+    "RootFlags(0), " \
+    "CBV(b0), " \
+    "DescriptorTable(SRV(t0, numDescriptors = 10), visibility = SHADER_VISIBILITY_ALL), " \
+    "DescriptorTable(UAV(u0, numDescriptors = 7), visibility = SHADER_VISIBILITY_ALL), "
+
+// Dispatch config
+#define THREAD_GROUP_SIZE_X     8
+#define THREAD_GROUP_SIZE_Y     8
+#define NUM_THREADS             (THREAD_GROUP_SIZE_X * THREAD_GROUP_SIZE_Y)
+
+static const uint2 s_ThreadGroupSize = uint2(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y);
+
+// Flags
+#define FLAGS_NON_GAMMA_ALBEDO          (1 << 0)
+#define FLAGS_LINEAR_DEPTH              (1 << 1)
+#define FLAGS_JITTERED_MV               (1 << 4)
+
+#define FLAGS_PACKED_ROUGHNESS          (1 << 2)
+#define FLAGS_MODE_2_SIGNAL             (1 << 3)
+
+// Debug Flags
+#define FLAGS_DEBUG                     (1 << 16)
+#define FLAGS_DEBUG_MODE_MASK           (0xFF << 16)
+
+// Inputs
+#define FLAGS_DEBUG_IN_SPEC_HIT_DIST    (1 << 17 | FLAGS_DEBUG)
+#define FLAGS_DEBUG_IN_MOTION           (2 << 17 | FLAGS_DEBUG)
+#define FLAGS_DEBUG_IN_NORMALS          (3 << 17 | FLAGS_DEBUG)
+#define FLAGS_DEBUG_IN_ROUGHNESS        (4 << 17 | FLAGS_DEBUG)
+#define FLAGS_DEBUG_IN_DIFF_ALBEDO      (5 << 17 | FLAGS_DEBUG)
+#define FLAGS_DEBUG_IN_SPEC_ALBEDO      (6 << 17 | FLAGS_DEBUG)
+
+// Outputs
+#define FLAGS_DEBUG_OUT_FUSED_ALBEDO    (7 << 17 | FLAGS_DEBUG)
+#define FLAGS_DEBUG_OUT_LINEAR_DEPTH    (8 << 17 | FLAGS_DEBUG)
+#define FLAGS_DEBUG_OUT_MOTION          (9 << 17 | FLAGS_DEBUG)
+#define FLAGS_DEBUG_OUT_NORMALS         (10 << 17 | FLAGS_DEBUG)
+#define FLAGS_DEBUG_OUT_SPEC_ALBEDO     (11 << 17 | FLAGS_DEBUG)
+#define FLAGS_DEBUG_OUT_DIFF_ALBEDO     (12 << 17 | FLAGS_DEBUG)
+
+#define FLAGS_DEBUG_OUT_DEPTH_DELTA     (13 << 17 | FLAGS_DEBUG)
+#define FLAGS_DEBUG_NORM_DEPTH          (14 << 17 | FLAGS_DEBUG)
+
+#define FLAGS_DEBUG_ALBEDO_OVERSHOOT    (15 << 17 | FLAGS_DEBUG)
+
+#define FLAGS_DEBUG_FLOOR_VARIANCE      (16 << 17 | FLAGS_DEBUG)
+#define FLAGS_DEBUG_FLOOR_COLOR         (17 << 17 | FLAGS_DEBUG)
+#define FLAGS_DEBUG_LOD_PROXY           (18 << 17 | FLAGS_DEBUG)
+
+// DLSS-RR Inputs
+Texture2D<half3> InColor : register(t0); // RGB - NVSDK_NGX_Parameter_Color
+Texture2D<float> InDepth : register(t1); // R - NVSDK_NGX_Parameter_Depth - hardware or linear - inverted or not
+Texture2D<float3> InMotionVectors : register(t2); // RG - NVSDK_NGX_Parameter_MotionVectors
+Texture2D<float4> InNormals : register(t3); // RGB: Normals, A: Roughness (Optional) - NVSDK_NGX_Parameter_GBuffer_Normals
+Texture2D<float> InRoughness : register(t4); // R - May be packed in normals. NVSDK_NGX_Parameter_GBuffer_Roughness
+Texture2D<float> InSpecHitDist : register(t5); // R - NVSDK_NGX_Parameter_DLSSD_SpecularHitDistance
+Texture2D<half3> InDiffAlbedo : register(t6); // RGB - NVSDK_NGX_Parameter_GBuffer_DiffuseAlbedo
+Texture2D<half3> InSpecAlbedo : register(t7); // RGB - NVSDK_NGX_Parameter_GBuffer_SpecularAlbedo
+Texture2D<half> InBiasMask : register(t8);
+
+Texture2D<half4> InFloorColor : register(t9);
+
+// FSR-RR - ffxDispatchDescDenoiserInput1Signal or ffxDispatchDescDenoiserInput2Signals
+//
+// Mode 1: RGB: Noisy fused lighting
+// Mode 2: RGB: Noisy specular lighting A: Specular Ray Length
+RWTexture2D<half4> OutSignal1 : register(u0); 
+
+// Mode 1: RGB Fused Albedo: max(specularAlbedo, diffuseAlbedo)
+// Mode 2: RGB: Noisy diffuse lighting for Mode 2
+RWTexture2D<half4> OutSignal2 : register(u1);
+
+// ffxDispatchDescDenoiser
+RWTexture2D<half4> OutMotion : register(u2); // RG: PreviousUV - CurrentUV (v1.2.0), B: PreviousLinearDepth - CurrentLinearDepth (signed)
+RWTexture2D<half4> OutNormals : register(u3); // RG: Octahedrally encoded normals, B: Linear Roughness, A: Material Type (Optional)
+RWTexture2D<half4> OutSpecAlbedo : register(u4); // RGB: Specular Albedo, A: dot(Normal, ViewDir)
+RWTexture2D<half4> OutDiffAlbedo : register(u5); // RGB: Diffuse Albedo, A: Metalness (not provided)
+
+RWTexture2D<half4> OutSkipSignal : register(u6);
+
+cbuffer CB_Packing : register(b0)
+{
+    float4x4 InvViewMatrix; // DLSSD WorldToView^-1
+    float4x4 InvProjMatrix; // DLSSD ViewToClip^-1
+    float4x4 PrevViewMatrix; // DLSSD WorldToView from last frame
+    
+    float4 DstTexSize; // Resolution of inputs
+    
+    float NearPlane;
+    float FarPlane;   
+    
+    float FloorIsolation;
+    uint Flags;
+
+    float2 JitterCorrection; // (currJitter - prevJitter) / MVScale. Added to jittered MVs to cancel jitter.
+    float2 _Padding;
+};
+
+bool IsSet(uint mask) { return (Flags & mask) == mask; }
+uint GetDebugMode() { return (Flags & FLAGS_DEBUG_MODE_MASK); }
+
+float3 GetViewSpacePos(const int2 px)
+{
+    const float rawDepth = InDepth[px];
+    const float2 uv = (float2(px) + 0.5) * DstTexSize.zw;
+    float3 viewSpacePos = 0.0f;
+
+    [branch]
+    if (IsSet(FLAGS_LINEAR_DEPTH))
+    {
+        // 线性深度：已是 view-space Z，直接按比例还原 XY
+        const float linDepth = clamp(abs(rawDepth), NearPlane, FarPlane);
+        viewSpacePos = InvProjectPosition(float3(uv, 1.0f), InvProjMatrix);
+        viewSpacePos.xy *= abs(linDepth / viewSpacePos.z);
+        viewSpacePos.z = linDepth;
+    }
+    else
+    {
+        // 硬件深度（NDC Z）：完整透视除法反投影
+        viewSpacePos = InvProjectPosition(float3(uv, abs(rawDepth)), InvProjMatrix);
+        viewSpacePos.z = clamp(abs(viewSpacePos.z), NearPlane, FarPlane);
+    }
+
+    return viewSpacePos;
+}
+
+// Main Kernel
+//
+[RootSignature(MainRS)]
+[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, 1)]
+void CSMain(uint3 groupID : SV_GroupID, uint3 gtID : SV_GroupThreadID)
+{
+    const uint2 px = groupID.xy * s_ThreadGroupSize + gtID.xy;
+    
+    if (px.x >= DstTexSize.x || px.y >= DstTexSize.y)
+        return;
+
+    // Albedo / reflectance
+    //
+    // Zeroed albedos are unusable sentinels and must be skipped.
+    // Depth values at the far plane indicate a skybox or other skippable content.
+    //
+    // DLSS-RR specular albedo is hemispherical specular reflectance at (NoV, roughness).
+    // Diffuse albedo is the diffuse component of reflectance.     
+    float3 specReflectance = GetSafeFP16(InSpecAlbedo[px].rgb);
+    float3 diffAlbedo = GetSafeFP16(InDiffAlbedo[px].rgb);
+    
+    const float totalAlbedo = dot(specReflectance.rgb + diffAlbedo.rgb, 1.0f);
+    const float isEmissive = (totalAlbedo > 5.9f);   
+    diffAlbedo.rgb *= (1.0f - isEmissive);
+    specReflectance.rgb = lerp(specReflectance.rgb, 0.1f, isEmissive);
+    
+    // Clamp albedo
+    const float3 albedoOvershoot = max((specReflectance.rgb + diffAlbedo.rgb) - 1.0f, 0.0f);
+    specReflectance.rgb = saturate(specReflectance.rgb - albedoOvershoot);
+    diffAlbedo.rgb -= max((specReflectance.rgb + diffAlbedo.rgb) - 1.0f, 0.0f);
+    specReflectance.rgb = max(specReflectance.rgb, 1e-4f);
+    diffAlbedo.rgb = max(diffAlbedo.rgb, 1e-4f);
+    
+    // Denoiser input color and floor residual
+    const float3 rawColor = GetSafeFP16(InColor[px].rgb);
+    float4 floorColor = InFloorColor[px];  
+    const float rawLuma = GetLuminance(rawColor);
+    const float floorLuma = GetLuminance(floorColor.rgb);
+    floorColor.a = floorLuma;
+
+    // Floor color blending
+    //
+    // Diffuse dominant surfaces are relatively well behaved.
+    const float avgSpecular = dot(specReflectance.rgb, 0.33f);
+    const float diffuseDominance = smoothstep(0.08f, 0.0f, avgSpecular);
+    const float similarityThreshold = lerp(0.5f, 0.2f, diffuseDominance);
+    
+    // Clamp floor to minimum and blend in raw values where similar to preserve microcontrast.
+    const float floorSimilarity = GetRelativeSimilarity(floorLuma, rawLuma, similarityThreshold);
+    floorColor.rgb = FloorIsolation * lerp(floorColor.rgb, rawColor, saturate(floorSimilarity));
+    floorColor.rgb = min(rawColor, floorColor.rgb);
+    const float3 denoiserColor = rawColor - floorColor.rgb;
+
+    // Depth - full position needed for reprojected depth delta
+    const float3 viewSpacePos = GetViewSpacePos(px);
+    const float compressedDepth = log(abs(viewSpacePos.z) + 1.0f) / log(FarPlane + 1.0f);
+    
+    if (((compressedDepth < 0.99f) && totalAlbedo > 1e-2f) || IsSet(FLAGS_DEBUG))
+    {        
+        // Normals - FSR-RR requries world normals.
+        //
+        // [TODO!] DLSS-RR normals may be in view or world space. They will need to be transformed to account
+        // for both configurations. Cyberpunk happens to use world normals, thankfully.
+        float4 worldSurfaceNormal = InNormals[px];        
+        const float2 octNormal = OctahedralEncode(worldSurfaceNormal.rgb);
+        const float materialType = 0.0f;
+    
+        // DLSS-RR provides 3D normals
+        // Linear roughness optionally included in the A channel, or in a separate single-channel 
+        // buffer (InRoughness).
+        float roughness = IsSet(FLAGS_PACKED_ROUGHNESS) ? worldSurfaceNormal.a : InRoughness[px];
+        roughness *= (1.0f - isEmissive);
+        
+        // Output: RG=OctNormal, B=Roughness, A=MaterialID
+        OutNormals[px] = GetSafeFP16(float4(octNormal, roughness, materialType));
+   
+        // Motion Vectors & Depth Delta
+        //
+        // Find the current pixel in world space and calculate movement in view space
+        const float3 worldSpacePos = mul(InvViewMatrix, float4(viewSpacePos, 1.0f)).xyz;
+        float3 prevViewSpacePos = mul(PrevViewMatrix, float4(worldSpacePos, 1.0f)).xyz;
+        prevViewSpacePos.z = abs(prevViewSpacePos.z);
+
+        // Motion vectors are pixel-space PreviousUV - CurrentUV (matching DLSS/NVSDK convention).
+        // The dispatch motionVectorScale converts pixel space to UV space.
+        // When the game delivers jittered MVs (DLSS-RR convention), we must cancel the
+        // per-frame jitter delta by adding JitterCorrection = (currJitter - prevJitter) / MVScale.
+        // Without this, FSR-RR's internal reprojection samples off-by-subpixel each frame,
+        // which manifests as high-frequency flicker that only disappears at high StabilityBias.
+        const float2 motionIn = IsSet(FLAGS_JITTERED_MV)
+            ? (InMotionVectors[px].rg + JitterCorrection)
+            : InMotionVectors[px].rg; // RG: Pixel Movement
+
+        // v1.2.0: depth delta = abs(PreviousLinearDepth) - abs(CurrentLinearDepth)
+        const float depthDelta = (prevViewSpacePos.z - viewSpacePos.z);
+        const float3 motionOut = float3(motionIn, depthDelta);
+        OutMotion[px] = half4(motionOut, 0.0f);
+
+        half hitDist = hitDist = 0.0f;
+        half3 demodColor = 0.0f;
+        float3 fusedAlbedo = 0.0f;
+        
+        [branch]
+        if (IsSet(FLAGS_MODE_2_SIGNAL)) // Primary radiance packing - Mode 2 Signal
+        {
+            // 用亮度权重分割，避免逐通道 albedo 权重造成色相漂移
+            const float lumSpec = GetLuminance(specReflectance.rgb);
+            const float lumDiff = GetLuminance(diffAlbedo.rgb);
+            const float rcpTotalLum = rcp(max(lumSpec + lumDiff, 1e-3f));
+
+            const float3 specularColor = denoiserColor * (lumSpec * rcpTotalLum);
+            const float3 diffuseColor  = denoiserColor - specularColor;
+
+            half3 demodSpecular = GetSafeFP16(specularColor / max(specReflectance.rgb, 1e-4f));
+            half3 demodDiffuse  = GetSafeFP16(diffuseColor  / max(diffAlbedo.rgb,      1e-4f));
+
+            // Anything that can't survive modulation and clamping should be skipped
+            const float3 remodColor = (demodSpecular * specReflectance.rgb) + (demodDiffuse * diffAlbedo.rgb);
+            const float3 residual = max(0.0f, denoiserColor - remodColor);           
+            floorColor.rgb += residual;
+            
+            // Mask out specular tracking if the surface isn't smooth enough
+            const float canUseHitDist = (roughness < 0.2f) * (1.0f - isEmissive);
+            hitDist = GetSafeFP16(InSpecHitDist[px] * canUseHitDist);
+            
+            [branch]
+            if (!IsSet(FLAGS_DEBUG))
+            {
+                OutSignal1[px] = half4(demodSpecular, hitDist);
+                OutSignal2[px] = half4(demodDiffuse, 0.0f);
+            }
+            else
+                demodColor = demodDiffuse + demodSpecular;
+        }
+        else // Primary radiance packing - Mode 1 Signal
+        {           
+            fusedAlbedo = max(specReflectance.rgb, diffAlbedo.rgb);
+            demodColor = GetSafeFP16(denoiserColor / fusedAlbedo.rgb);
+            
+            const float3 residual = max(0.0f, denoiserColor - (demodColor * fusedAlbedo.rgb));
+            floorColor.rgb += residual;
+            
+            [branch]
+            if (!IsSet(FLAGS_NON_GAMMA_ALBEDO))
+                fusedAlbedo = sqrt(fusedAlbedo);
+            
+            [branch]
+            if (!IsSet(FLAGS_DEBUG))
+            {
+                OutSignal1[px] = half4(demodColor, hitDist);
+                OutSignal2[px] = half4(GetSafeFP16(fusedAlbedo), 0.0f);
+            }
+        }        
+
+        // May be for better perceptual encoding efficiency in some configurations
+        [branch]
+        if (!IsSet(FLAGS_NON_GAMMA_ALBEDO))
+        {
+            specReflectance = sqrt(specReflectance);
+            diffAlbedo = sqrt(diffAlbedo);
+        }
+        
+        OutSpecAlbedo[px] = half4(GetSafeFP16(specReflectance), 0.0f);
+        OutDiffAlbedo[px] = half4(GetSafeFP16(diffAlbedo), 0.0f);
+        OutSkipSignal[px] = half4(GetSafeFP16(floorColor));
+        
+        [branch]
+        if (IsSet(FLAGS_DEBUG))
+        {
+            float3 debugColor = float3(0, 0, 0);
+        
+            switch (GetDebugMode())
+            {
+                // Inputs
+                case FLAGS_DEBUG_IN_SPEC_HIT_DIST:
+                    debugColor = TurboColormap(frac(hitDist * 0.1f));
+                    break;
+                
+                case FLAGS_DEBUG_NORM_DEPTH:
+                    debugColor = TurboColormap(compressedDepth);
+                    break;
+                
+                case FLAGS_DEBUG_IN_MOTION:
+                    debugColor = VisualizeMotionVec(motionIn * DstTexSize.xy, 0.1f);
+                    break;
+                
+                case FLAGS_DEBUG_IN_NORMALS:
+                    debugColor = worldSurfaceNormal.rgb * 0.5 + 0.5;
+                    break;
+                
+                case FLAGS_DEBUG_IN_ROUGHNESS:
+                    debugColor = roughness;
+                    break;
+                
+                case FLAGS_DEBUG_IN_DIFF_ALBEDO:
+                    debugColor = InDiffAlbedo[px];
+                    break;
+                
+                case FLAGS_DEBUG_IN_SPEC_ALBEDO:
+                    debugColor = InSpecAlbedo[px];
+                    break;
+                // Outputs
+                case FLAGS_DEBUG_OUT_FUSED_ALBEDO:
+                    debugColor = fusedAlbedo.rgb;
+                    break;
+                
+                case FLAGS_DEBUG_OUT_LINEAR_DEPTH:
+                    debugColor = TurboColormap(frac(abs(viewSpacePos.z) * 0.1));
+                    break;
+                
+                case FLAGS_DEBUG_OUT_MOTION:
+                    debugColor = VisualizeMotionVec(motionOut.xy * DstTexSize.xy, 0.1f);
+                    break;
+
+                case FLAGS_DEBUG_OUT_DEPTH_DELTA:
+                    debugColor = VisualizeSignedDiff(motionOut.z, 5.0f);
+                    break;
+                
+                case FLAGS_DEBUG_OUT_NORMALS:
+                    debugColor = OctahedralDecode(octNormal) * 0.5 + 0.5;
+                    break;
+
+                case FLAGS_DEBUG_OUT_SPEC_ALBEDO:
+                    debugColor = specReflectance.rgb;
+                    break;
+                
+                case FLAGS_DEBUG_OUT_DIFF_ALBEDO:
+                    debugColor = diffAlbedo.rgb;
+                    break;
+
+                case FLAGS_DEBUG_FLOOR_VARIANCE:
+                    debugColor = TurboColormap(InFloorColor[px].a);
+                    break;
+                
+                case FLAGS_DEBUG_FLOOR_COLOR:
+                    debugColor = InFloorColor[px].rgb;
+                    break;
+
+                case FLAGS_DEBUG_LOD_PROXY:
+                    // Proxy for FSR-RR's effective spatial LOD: distant + slow pixels
+                    // should receive the most filtering. Bright = high LOD (more blur).
+                    debugColor = TurboColormap(saturate(compressedDepth * (1.0f + length(motionIn) * 10.0f)));
+                    break;
+
+                case FLAGS_DEBUG_ALBEDO_OVERSHOOT:
+                    debugColor = albedoOvershoot;
+                    break;
+                
+                default:
+                    debugColor = demodColor;
+                    break;
+            }
+        
+            OutSignal1[px] = half4(debugColor, 1.0f);
+        }
+    }
+    else // Skip
+    {
+        OutNormals[px] = 0.0f;
+        OutSpecAlbedo[px] = 0.0f;
+        OutDiffAlbedo[px] = 0.0f;
+        OutSignal1[px] = 0.0f;
+        OutSignal2[px] = 0.0f;
+        OutSkipSignal[px] = half4(rawColor, rawLuma);
+    }
+}

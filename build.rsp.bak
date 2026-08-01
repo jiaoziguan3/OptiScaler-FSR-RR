@@ -1,0 +1,8 @@
+j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj
+/p:Configuration=Release
+/p:Platform=x64
+/p:SolutionDir=j:\OptiScaler-master-0.10-2\
+/t:Rebuild
+/m
+/nologo
+/v:minimal

@@ -93,8 +93,11 @@ class IFeature
     virtual bool IsWithDx12() = 0;
     virtual feature_version Version() = 0;
     virtual Upscaler GetUpscalerType() const = 0;
-    std::string Name() const { return UpscalerDisplayName(GetUpscalerType()); };
+    virtual std::string Name() const { return UpscalerDisplayName(GetUpscalerType()); };
     std::string ShortName() const { return UpscalerShortName(GetUpscalerType()); }; // Without the version
+
+    // Optional extra version string shown in the top bar for combined features (e.g. FSR-RR denoiser).
+    virtual std::string SubFeatureVersionString() const { return ""; }
 
     virtual size_t JitterCount() { return _jitterInfo.size(); }
 

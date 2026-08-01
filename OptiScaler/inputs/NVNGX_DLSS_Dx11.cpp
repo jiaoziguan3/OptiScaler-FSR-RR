@@ -10,9 +10,6 @@
 #include "NVNGX_Parameter.h"
 #include "proxies/NVNGX_Proxy.h"
 
-#include <with_dx12/with_dx12.h>
-#include "FG/Upscaler_Inputs_Dx11wDx12.h"
-
 #include <upscaler_time/UpscalerTime_Dx11.h>
 
 #include <ankerl/unordered_dense.h>
@@ -186,7 +183,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_Ext(unsigned long long InApp
     if (InFeatureInfo != nullptr && InSDKVersion > 0x0000013)
         State::Instance().NVNGX_Logger = InFeatureInfo->LoggingInfo;
 
-    if (State::Instance().nvngxDx11Inited)
+    if (State::Instance().nvngxDx11Inited && InDevice == D3D11Device)
     {
         LOG_WARN("NVNGX already inited");
         return NVSDK_NGX_Result_Success;
@@ -368,8 +365,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown()
     shutdown = false;
     State::Instance().nvngxDx11Inited = false;
 
-    Dx11WithDx12::ResetUpscalerResourceCache(true);
-
     return NVSDK_NGX_Result_Success;
 }
 
@@ -415,16 +410,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetParameters(NVSDK_NGX_Parameter
 
         if (result == NVSDK_NGX_Result_Success)
         {
-            InitNGXParameters(*OutParameters);
+            InitNGXParameters(*OutParameters, API::DX11);
             SetNGXParamAllocType(*(*OutParameters), NGX_AllocTypes::NVPersistent);
             return result;
         }
     }
 
     // Get custom parameters if using custom backend
-    static NVNGX_Parameters oldParams = NVNGX_Parameters("OptiDx11", true);
+    static NVNGX_Parameters oldParams = NVNGX_Parameters(API::DX11, true);
     *OutParameters = &oldParams;
-    InitNGXParameters(*OutParameters);
+    InitNGXParameters(*OutParameters, API::DX11);
 
     LOG_DEBUG("Returning custom Opti parameters");
 
@@ -454,14 +449,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetCapabilityParameters(NVSDK_NGX
 
         if (result == NVSDK_NGX_Result_Success)
         {
-            InitNGXParameters(*OutParameters);
+            InitNGXParameters(*OutParameters, API::DX11);
             SetNGXParamAllocType(*(*OutParameters), NGX_AllocTypes::NVDynamic);
             return result;
         }
     }
 
-    *OutParameters = new NVNGX_Parameters("OptiDx11", false);
-    InitNGXParameters(*OutParameters);
+    *OutParameters = new NVNGX_Parameters(API::DX11, false);
+    InitNGXParameters(*OutParameters, API::DX11);
 
     LOG_DEBUG("Returning custom Opti parameters");
 
@@ -492,7 +487,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_AllocateParameters(NVSDK_NGX_Para
         }
     }
 
-    *OutParameters = new NVNGX_Parameters("OptiDx11", false);
+    *OutParameters = new NVNGX_Parameters(API::DX11, false);
 
     return NVSDK_NGX_Result_Success;
 }
@@ -504,7 +499,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_PopulateParameters_Impl(NVSDK_NGX
     if (InParameters == nullptr)
         return NVSDK_NGX_Result_FAIL_InvalidParameter;
 
-    InitNGXParameters(InParameters);
+    InitNGXParameters(InParameters, API::DX11);
 
     return NVSDK_NGX_Result_Success;
 }
@@ -800,22 +795,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 
     auto upscaleResult = deviceContext->Evaluate(InDevCtx, InParameters);
 
-    UpscalerTimeDx11::UpscaleEnd(InDevCtx);
-
-    if (State::Instance().activeFgInput == FGInput::Upscaler)
-    {
-        if (WithDx12::IsInited())
-        {
-            auto cq = WithDx12::GetD3D12CommandQueue();
-            auto device = WithDx12::GetD3D12Device();
-
-            UpscalerInputsDx11wDx12::Init(D3D11Device, InDevCtx, device, cq);
-
-            UpscalerInputsDx11wDx12::UpscaleStart(InParameters, deviceContext);
-            UpscalerInputsDx11wDx12::UpscaleEnd(InParameters, deviceContext);
-        }
-    }
-
     auto upscaler = deviceContext->GetUpscalerType();
     if (!upscaleResult && !deviceContext->IsInited() &&
         (upscaler == Upscaler::XeSS || upscaler == Upscaler::XeSS_on12 || upscaler == Upscaler::DLSS ||
@@ -825,6 +804,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
         state.newBackend = Upscaler::FSR22;
         state.changeBackend[handleId] = true;
     }
+
+    UpscalerTimeDx11::UpscaleEnd(InDevCtx);
 
     return NVSDK_NGX_Result_Success;
 }

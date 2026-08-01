@@ -297,6 +297,7 @@ class Config
     // DA Sharpening
     CustomOptional<float, NoDefault> DADepthScale;
     CustomOptional<float, NoDefault> DADepthBias;
+    CustomOptional<bool> DADepthIsLinear { false };
     CustomOptional<bool, NoDefault> DAClampOutput;
 
     // MAS
@@ -321,6 +322,7 @@ class Config
     CustomOptional<bool> OverlayMenu { true };
     CustomOptional<int> ShortcutKey { VK_INSERT };
     CustomOptional<bool> ExtendedLimits { false };
+    CustomOptional<int> Language { 0 };
     CustomOptional<bool> ShowFps { false };
     /// 0 Top Left, 1 Top Right, 2 Bottom Left, 3 Bottom Right
     CustomOptional<int> FpsOverlayPos { 0 };
@@ -450,6 +452,24 @@ class Config
     CustomOptional<uint32_t, NoDefault> Fsr4Preset;
     CustomOptional<bool> Fsr4EnableWatermark { false };
     CustomOptional<bool> Fsr4DoNotLoadAmdxc64 { false };
+    CustomOptional<bool> Fsr4EnableDebugView { false };
+    CustomOptional<Fsr4Provider> Fsr4ProviderPath { Fsr4Provider::Auto };
+    CustomOptional<std::wstring> Fsr4Amdxcffx64Path { L"" };
+
+    // FSR-RR
+    CustomOptional<int> FfxDenoiserIndex { 0 };
+    CustomOptional<int> FfxDenoiserMode { 0 };
+    CustomOptional<uint64_t> FfxDenoiserDebugMode { 0 };
+    CustomOptional<float> FfxDenoiserDisocThreshold { 0.1f };
+    CustomOptional<float> FfxDenoiserCrossBlNormStr { 0.5f };
+    CustomOptional<float> FfxDenoiserStabilityBias { 0.5f };
+    CustomOptional<float> FfxDenoiserMaxRadiance { 4e4f };
+    CustomOptional<float> FfxDenoiserRadianceClip { 40.0f };
+    CustomOptional<float> FfxDenoiserGaussKernRelax { 0.5f };
+    CustomOptional<float> FfxDenoiserCorrelationBias { 1.0f };
+    CustomOptional<float> FfxDenoiserFloorIsolation { 0.3f };
+    CustomOptional<bool> FfxDenoiserTemporalStable { false }; // Post-composition EMA flicker suppression (motion-adaptive alpha)
+    CustomOptional<float> FfxDenoiserTemporalAlpha { 0.2f };  // EMA blend factor for static pixels [0..1]. Lower = more smoothing (more flicker suppression, but only on static areas)
 
     // FSR Common
     CustomOptional<float> FsrVerticalFov { 60.0f };

@@ -13,7 +13,7 @@
 // private
 bool LowLatency::update_low_latency_tech(IUnknown* pDevice)
 {
-    if (!pDevice)
+    if (!pDevice && !forced_low_latency_context)
     {
         LOG_ERROR("Invalid pointer");
         return false;
@@ -21,20 +21,23 @@ bool LowLatency::update_low_latency_tech(IUnknown* pDevice)
 
     if (!currently_active_tech.load())
     {
-        if (forced_low_latency_tech == LowLatencyMode::XeLL)
+        if (forced_low_latency_context && forced_low_latency_tech == LowLatencyMode::AntiLag2)
         {
-            auto new_tech_xell = std::make_shared<XeLL>();
-            if (new_tech_xell->init(pDevice))
+            auto new_tech = std::make_shared<AntiLag2>();
+            if (new_tech->init_using_ctx(forced_low_latency_context))
             {
-                LOG_INFO("LowLatency algo: XeLL (forced)");
-
-                new_tech_xell->set_forced_mode(true);
-
-                SleepMode sleepMode {};
-                sleepMode.low_latency_enabled = true;
-                new_tech_xell->set_sleep_mode(&sleepMode);
-
-                currently_active_tech.store(std::move(new_tech_xell));
+                LOG_INFO("LowLatency algo: FSR Latency Reduction 2.0 (via context)");
+                currently_active_tech.store(std::move(new_tech));
+                return true;
+            }
+        }
+        else if (forced_low_latency_context && forced_low_latency_tech == LowLatencyMode::XeLL)
+        {
+            auto new_tech = std::make_shared<XeLL>();
+            if (new_tech->init_using_ctx(forced_low_latency_context))
+            {
+                LOG_INFO("LowLatency algo: XeLL (via context)");
+                currently_active_tech.store(std::move(new_tech));
                 return true;
             }
         }
@@ -47,7 +50,7 @@ bool LowLatency::update_low_latency_tech(IUnknown* pDevice)
             auto new_tech_al2 = std::make_shared<AntiLag2>();
             if (new_tech_al2->init(pDevice))
             {
-                LOG_INFO("LowLatency algo: FSR Anti-Lag 2.0");
+                LOG_INFO("LowLatency algo: FSR Latency Reduction 2.0");
                 new_tech_al2->set_sleep_mode(&last_sleep_mode);
                 currently_active_tech.store(std::move(new_tech_al2));
                 return true;
@@ -77,10 +80,6 @@ bool LowLatency::update_low_latency_tech(IUnknown* pDevice)
     bool force_latencyflex = Config::Instance()->FN_ForceLatencyFlex.value_or_default();
     bool change_detected = last_force_latencyflex != force_latencyflex;
     last_force_latencyflex = force_latencyflex;
-
-    // Don't allow for deinit with forced mode
-    if (forced_low_latency_tech != LowLatencyMode::None)
-        return true;
 
     if (State::Instance().fakenvapiReloadLowLatency)
     {

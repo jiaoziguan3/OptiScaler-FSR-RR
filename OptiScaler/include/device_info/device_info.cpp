@@ -1511,7 +1511,7 @@ static constexpr auto kDeviceInfo = std::to_array<DeviceInfo>({
     return std::nullopt;
 }
 
-// Compile-time tests — one per HW generation, with an arbitrary CU count of 4.
+// Compile-time tests �?one per HW generation, with an arbitrary CU count of 4.
 static_assert(!GetTotalLdsSizeInBytesImpl(kUndefinedGeneration, 4).has_value());
 static_assert(!GetTotalLdsSizeInBytesImpl(kNvidia, 4).has_value());
 static_assert(!GetTotalLdsSizeInBytesImpl(kIntel, 4).has_value());

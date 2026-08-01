@@ -1,0 +1,42 @@
+﻿
+  dllmain.cpp
+  D3D12_Hooks.cpp
+  LibraryLoad_Hooks.cpp
+  FSR3_Dx12_FG.cpp
+  FSR2_Dx11.cpp
+  FSR2_Dx12.cpp
+  FSR2_Vk.cpp
+  FSR3_Dx12.cpp
+  FfxApiExe_Dx12.cpp
+  FfxApi_Dx12.cpp
+  FfxApi_Vk.cpp
+  NVNGX_DLSS_Vk.cpp
+  XeSS_Common.cpp
+  XeSS_Dx11.cpp
+  XeSS_Dx12.cpp
+  XeSS_Vulkan.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\dllmain.cpp(1,1): warning C4819: 璇ユ枃浠跺寘鍚笉鑳藉湪褰撳墠浠ｇ爜椤?936)涓〃绀虹殑瀛楃銆傝灏嗚鏂囦欢淇濆瓨涓?Unicode 鏍煎紡浠ラ槻姝㈡暟鎹涪澶?[j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  menu_common.cpp
+  menu_dx_base.cpp
+  menu_overlay_base.cpp
+  FeatureProvider_Dx11.cpp
+  FeatureProvider_Dx12.cpp
+  FeatureProvider_Vk.cpp
+  XeSSFeature.cpp
+  XeSSFeature_Dx11.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\menu\menu_common.cpp(1,1): warning C4819: 璇ユ枃浠跺寘鍚笉鑳藉湪褰撳墠浠ｇ爜椤?936)涓〃绀虹殑瀛楃銆傝灏嗚鏂囦欢淇濆瓨涓?Unicode 鏍煎紡浠ラ槻姝㈡暟鎹涪澶?[j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  XeSSFeature_Dx11on12.cpp
+  XeSSFeature_Dx12.cpp
+  XeSSFeature_Vk.cpp
+  version_check.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\menu\menu_common.cpp(695,1): warning C4819: 璇ユ枃浠跺寘鍚笉鑳藉湪褰撳墠浠ｇ爜椤?936)涓〃绀虹殑瀛楃銆傝灏嗚鏂囦欢淇濆瓨涓?Unicode 鏍煎紡浠ラ槻姝㈡暟鎹涪澶?[j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (缂栬瘧婧愭枃浠垛€?menu/menu_common.cpp鈥?
+  
+j:\OptiScaler-master-0.10-2\OptiScaler\hooks\Advapi32_Hooks.h(1,1): warning C4819: 璇ユ枃浠跺寘鍚笉鑳藉湪褰撳墠浠ｇ爜椤?936)涓〃绀虹殑瀛楃銆傝灏嗚鏂囦欢淇濆瓨涓?Unicode 鏍煎紡浠ラ槻姝㈡暟鎹涪澶?[j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (缂栬瘧婧愭枃浠垛€?dllmain.cpp鈥?
+  
+j:\OptiScaler-master-0.10-2\OptiScaler\include\fsr31\dx11\ffx_dx11.h(1,1): warning C4819: 璇ユ枃浠跺寘鍚笉鑳藉湪褰撳墠浠ｇ爜椤?936)涓〃绀虹殑瀛楃銆傝灏嗚鏂囦欢淇濆瓨涓?Unicode 鏍煎紡浠ラ槻姝㈡暟鎹涪澶?[j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (缂栬瘧婧愭枃浠垛€?upscalers/FeatureProvider_Dx11.cpp鈥?
+  
+LINK : warning C4744: 鈥渟tatic struct std::atomic<class std::shared_ptr<class LowLatencyTech> > InputCommon::currently_active_tech鈥濆湪鈥渏:\optiscaler-master-0.10-2\optiscaler\nvapi\fakenvapi\low_latency_d3d.cpp鈥濆拰鈥渏:\optiscaler-master-0.10-2\optiscaler\hooks\amdxc64_hooks.cpp鈥濅腑鍏锋湁涓嶅悓鐨勭被鍨? 鈥淿_declspec(align(16)) struct (16 bytes)鈥濆拰鈥渟truct (16 bytes)鈥?[j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+LINK : fatal error LNK1104: 鏃犳硶鎵撳紑鏂囦欢鈥淪ource.def鈥?[j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]

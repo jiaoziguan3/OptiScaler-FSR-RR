@@ -80,17 +80,6 @@ uint64_t FSR4ModelSelection::hkcreateModelDriver(void* context, uint32_t preset)
     return result;
 }
 
-uint64_t FSR4ModelSelection::hkcreateModelDriver2(void* context, uint32_t preset, void** model)
-{
-    LOG_FUNC();
-
-    preset = getCorrectedPreset(preset);
-
-    auto result = o_createModelDriver2(context, preset, model);
-
-    return result;
-}
-
 uint64_t FSR4ModelSelection::hkcreateModelSDK2(void* context, uint32_t preset, void** model)
 {
     LOG_FUNC();
@@ -98,6 +87,17 @@ uint64_t FSR4ModelSelection::hkcreateModelSDK2(void* context, uint32_t preset, v
     preset = getCorrectedPreset(preset);
 
     auto result = o_createModelSDK2(context, preset, model);
+
+    return result;
+}
+
+uint64_t FSR4ModelSelection::hkcreateModelDriver2(void* context, uint32_t preset, void** model)
+{
+    LOG_FUNC();
+
+    preset = getCorrectedPreset(preset);
+
+    auto result = o_createModelDriver2(context, preset, model);
 
     return result;
 }
@@ -123,6 +123,7 @@ void FSR4ModelSelection::Hook(HMODULE module, FSR4Source source)
             LOG_DEBUG("Unhooked old model selection hooks for SDK");
 
             o_createModelSDK = nullptr;
+            o_createModelSDK2 = nullptr;
             o_getModelBlobSDK = nullptr;
         }
     }
@@ -142,6 +143,7 @@ void FSR4ModelSelection::Hook(HMODULE module, FSR4Source source)
             LOG_DEBUG("Unhooked old model selection hooks for the driver dll");
 
             o_createModelDriver = nullptr;
+            o_createModelDriver2 = nullptr;
             o_getModelBlobDriver = nullptr;
         }
     }
@@ -214,10 +216,10 @@ void FSR4ModelSelection::Hook(HMODULE module, FSR4Source source)
             o_createModelSDK = (PFN_createModel) scanner::GetAddress(module, pattern410);
         }
 
+        LOG_DEBUG("Hooking model selection, o_createModelSDK: {:X}", (uintptr_t) o_createModelSDK);
+
         if (o_createModelSDK)
         {
-            LOG_DEBUG("Hooking model selection, o_createModelSDK: {:X}", (uintptr_t) o_createModelSDK);
-
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
 

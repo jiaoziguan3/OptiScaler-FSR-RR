@@ -262,7 +262,6 @@ bool Config::Reload(std::filesystem::path iniPath)
             FfxFGIndex.set_from_config(readInt("FSR", "FGIndex"));
             FsrUseMaskForTransparency.set_from_config(readBool("FSR", "UseReactiveMaskForTransparency"));
             DlssReactiveMaskBias.set_from_config(readFloat("FSR", "DlssReactiveMaskBias"));
-
             if (auto v = readEnum<FSR4Support>("FSR", "Fsr4ForceModel"))
                 Fsr4ForceModel.set_from_config(*v);
             else
@@ -270,6 +269,13 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             Fsr4EnableWatermark.set_from_config(readBool("FSR", "Fsr4EnableWatermark"));
             Fsr4DoNotLoadAmdxc64.set_from_config(readBool("FSR", "Fsr4DoNotLoadAmdxc64"));
+
+            if (auto v = readEnum<Fsr4Provider>("FSR", "Fsr4Provider"))
+                Fsr4ProviderPath.set_from_config(*v);
+            else
+                Fsr4ProviderPath.reset();
+
+            Fsr4Amdxcffx64Path.set_from_config(readWString("FSR", "Fsr4Amdxcffx64Path"));
 
             if (auto setting = readInt("FSR", "Fsr4Preset"); setting.has_value() && setting >= 0 && setting <= 5)
                 Fsr4Preset.set_from_config(setting);
@@ -287,6 +293,21 @@ bool Config::Reload(std::filesystem::path iniPath)
 
             if (FsrNonLinearPQ.has_value() || FsrNonLinearSRGB.has_value())
                 FsrNonLinearColorSpace.set_volatile_value(true);
+        }
+
+        // FSR-RR
+        {
+            FfxDenoiserMode.set_from_config(readInt("FSR-RR", "DenoiserMode"));
+            FfxDenoiserDisocThreshold.set_from_config(readFloat("FSR-RR", "DisocclusionThreshold"));
+            FfxDenoiserCrossBlNormStr.set_from_config(readFloat("FSR-RR", "CrossBilateralNormalStrength"));
+            FfxDenoiserStabilityBias.set_from_config(readFloat("FSR-RR", "TemporalStabilityBias"));
+            FfxDenoiserMaxRadiance.set_from_config(readFloat("FSR-RR", "MaxRadiance"));
+            FfxDenoiserRadianceClip.set_from_config(readFloat("FSR-RR", "RadianceClipDeviation"));
+            FfxDenoiserGaussKernRelax.set_from_config(readFloat("FSR-RR", "GaussianKernelRelaxation"));
+            FfxDenoiserCorrelationBias.set_from_config(readFloat("FSR-RR", "CorrelationBias"));
+            FfxDenoiserFloorIsolation.set_from_config(readFloat("FSR-RR", "FloorIsolation"));
+            FfxDenoiserTemporalStable.set_from_config(readBool("FSR-RR", "TemporalStableLayer"));
+            FfxDenoiserTemporalAlpha.set_from_config(readFloat("FSR-RR", "TemporalStableAlpha"));
         }
 
         // XeSS
@@ -437,6 +458,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             OverlayMenu.set_from_config(readBool("Menu", "OverlayMenu"));
             ShortcutKey.set_from_config(readInt("Menu", "ShortcutKey"));
             ExtendedLimits.set_from_config(readBool("Menu", "ExtendedLimits"));
+            Language.set_from_config(readInt("Menu", "Language"));
             ShowFps.set_from_config(readBool("Menu", "ShowFps"));
             UseHQFont.set_from_config(readBool("Menu", "UseHQFont"));
             DisableSplash.set_from_config(readBool("Menu", "DisableSplash"));
@@ -507,30 +529,6 @@ bool Config::Reload(std::filesystem::path iniPath)
             DAClampOutput.set_from_config(readBool("CAS", "DAClampOutput"));
 
             MotionSharpnessDebug.set_from_config(readBool("CAS", "SharpenerDebug"));
-        }
-
-        // Magnifier
-        {
-            MagnifierEnabled.set_from_config(readBool("Magnifier", "Enabled"));
-
-            if (auto setting = readFloat("Magnifier", "Size"); setting.has_value())
-                MagnifierSize.set_from_config(std::clamp(setting.value(), 0.0f, 100.0f));
-
-            if (auto setting = readInt("Magnifier", "ZoomFactor"); setting.has_value())
-                MagnifierZoomFactor.set_from_config(std::clamp(setting.value(), 2, 20));
-
-            if (auto setting = readFloat("Magnifier", "BorderSize"); setting.has_value())
-                MagnifierBorderSize.set_from_config(std::clamp(setting.value(), 0.0f, 2.0f));
-
-            if (auto setting = readFloat("Magnifier", "CursorOffsetX"); setting.has_value())
-                MagnifierCursorOffsetX.set_from_config(std::clamp(setting.value(), -1000.f, 1000.f));
-            if (auto setting = readFloat("Magnifier", "CursorOffsetY"); setting.has_value())
-                MagnifierCursorOffsetY.set_from_config(std::clamp(setting.value(), -1000.f, 1000.f));
-
-            if (auto setting = readFloat("Magnifier", "StaticPosX"); setting.has_value())
-                MagnifierStaticPosX.set_from_config(std::clamp(setting.value(), 0.0f, 100.0f));
-            if (auto setting = readFloat("Magnifier", "StaticPosY"); setting.has_value())
-                MagnifierStaticPosY.set_from_config(std::clamp(setting.value(), 0.0f, 100.0f));
         }
 
         // Output Scaling
@@ -977,7 +975,7 @@ bool Config::SaveIni()
         ini.SetValue("DLSSG", "OverrideForceDMFG",
                      GetBoolValue(Instance()->FGDLSSGOverrideForceDMFG.value_for_config()).c_str());
         ini.SetValue("DLSSG", "DispatchFlags",
-                     GetIntValue(Instance()->FGDLSSGDispatchFlags.value_for_config(), true).c_str());
+                     GetIntValue(Instance()->FGDLSSGDispatchFlags.value_for_config()).c_str());
         ini.SetValue("DLSSG", "ShowDebug", GetIntValue(Instance()->FGDLSSGShowDebug.value_for_config()).c_str());
         ini.SetValue("DLSSG", "DisableHudless",
                      GetBoolValue(Instance()->FGDLSSGDisableHudless.value_for_config()).c_str());
@@ -1087,12 +1085,42 @@ bool Config::SaveIni()
                      GetBoolValue(Instance()->Fsr4EnableWatermark.value_for_config()).c_str());
         ini.SetValue("FSR", "Fsr4DoNotLoadAmdxc64",
                      GetBoolValue(Instance()->Fsr4DoNotLoadAmdxc64.value_for_config()).c_str());
+        ini.SetValue("FSR", "Fsr4Provider",
+                     GetIntValue(Instance()->Fsr4ProviderPath.value_for_config()).c_str());
+        ini.SetValue("FSR", "Fsr4Amdxcffx64Path",
+                     wstring_to_string(Instance()->Fsr4Amdxcffx64Path.value_for_config_or(L"")).c_str());
         ini.SetValue("FSR", "FsrNonLinearColorSpace",
                      GetBoolValue(Instance()->FsrNonLinearColorSpace.value_for_config()).c_str());
         ini.SetValue("FSR", "FsrNonLinearPQ", GetBoolValue(Instance()->FsrNonLinearPQ.value_for_config()).c_str());
         ini.SetValue("FSR", "FsrNonLinearSRGB", GetBoolValue(Instance()->FsrNonLinearSRGB.value_for_config()).c_str());
         ini.SetValue("FSR", "FsrAgilitySDKUpgrade",
                      GetBoolValue(Instance()->FsrAgilitySDKUpgrade.value_for_config()).c_str());
+    }
+
+    // FSR-RR
+    {
+        ini.SetValue("FSR-RR", "DenoiserMode",
+                     GetIntValue(Instance()->FfxDenoiserMode.value_for_config()).c_str());
+        ini.SetValue("FSR-RR", "DisocclusionThreshold",
+                     GetFloatValue(Instance()->FfxDenoiserDisocThreshold.value_for_config()).c_str());
+        ini.SetValue("FSR-RR", "CrossBilateralNormalStrength",
+                     GetFloatValue(Instance()->FfxDenoiserCrossBlNormStr.value_for_config()).c_str());
+        ini.SetValue("FSR-RR", "TemporalStabilityBias",
+                     GetFloatValue(Instance()->FfxDenoiserStabilityBias.value_for_config()).c_str());
+        ini.SetValue("FSR-RR", "MaxRadiance",
+                     GetFloatValue(Instance()->FfxDenoiserMaxRadiance.value_for_config()).c_str());
+        ini.SetValue("FSR-RR", "RadianceClipDeviation",
+                     GetFloatValue(Instance()->FfxDenoiserRadianceClip.value_for_config()).c_str());
+        ini.SetValue("FSR-RR", "GaussianKernelRelaxation",
+                     GetFloatValue(Instance()->FfxDenoiserGaussKernRelax.value_for_config()).c_str());
+        ini.SetValue("FSR-RR", "CorrelationBias",
+                     GetFloatValue(Instance()->FfxDenoiserCorrelationBias.value_for_config()).c_str());
+        ini.SetValue("FSR-RR", "FloorIsolation",
+                     GetFloatValue(Instance()->FfxDenoiserFloorIsolation.value_for_config()).c_str());
+        ini.SetValue("FSR-RR", "TemporalStableLayer",
+                     GetBoolValue(Instance()->FfxDenoiserTemporalStable.value_for_config()).c_str());
+        ini.SetValue("FSR-RR", "TemporalStableAlpha",
+                     GetFloatValue(Instance()->FfxDenoiserTemporalAlpha.value_for_config()).c_str());
     }
 
     // XeSS
@@ -1183,27 +1211,6 @@ bool Config::SaveIni()
                      GetBoolValue(Instance()->MotionSharpnessDebug.value_for_config()).c_str());
     }
 
-    // Magnifier
-    {
-        ini.SetValue("Magnifier", "Enabled", GetBoolValue(Instance()->MagnifierEnabled.value_for_config()).c_str());
-
-        ini.SetValue("Magnifier", "Size", GetFloatValue(Instance()->MagnifierSize.value_for_config()).c_str());
-        ini.SetValue("Magnifier", "ZoomFactor",
-                     GetIntValue(Instance()->MagnifierZoomFactor.value_for_config()).c_str());
-
-        ini.SetValue("Magnifier", "BorderSize",
-                     GetFloatValue(Instance()->MagnifierBorderSize.value_for_config()).c_str());
-        ini.SetValue("Magnifier", "CursorOffsetX",
-                     GetFloatValue(Instance()->MagnifierCursorOffsetX.value_for_config()).c_str());
-        ini.SetValue("Magnifier", "CursorOffsetY",
-                     GetFloatValue(Instance()->MagnifierCursorOffsetY.value_for_config()).c_str());
-
-        ini.SetValue("Magnifier", "StaticPosX",
-                     GetFloatValue(Instance()->MagnifierStaticPosX.value_for_config()).c_str());
-        ini.SetValue("Magnifier", "StaticPosY",
-                     GetFloatValue(Instance()->MagnifierStaticPosY.value_for_config()).c_str());
-    }
-
     // Menu
     {
         ini.SetValue("Menu", "Scale", GetFloatValue(Instance()->MenuScale).c_str());
@@ -1214,6 +1221,7 @@ bool Config::SaveIni()
                      GetIntValue(Instance()->ShortcutKey.value_for_config(), setting > 0).c_str());
 
         ini.SetValue("Menu", "ExtendedLimits", GetBoolValue(Instance()->ExtendedLimits.value_for_config()).c_str());
+        ini.SetValue("Menu", "Language", GetIntValue(Instance()->Language.value_for_config()).c_str());
         ini.SetValue("Menu", "ShowFps", GetBoolValue(Instance()->ShowFps.value_for_config()).c_str());
         ini.SetValue("Menu", "UseHQFont", GetBoolValue(Instance()->UseHQFont.value_for_config()).c_str());
         ini.SetValue("Menu", "DisableSplash", GetBoolValue(Instance()->DisableSplash.value_for_config()).c_str());

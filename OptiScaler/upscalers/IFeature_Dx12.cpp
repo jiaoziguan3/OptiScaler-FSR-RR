@@ -7,7 +7,7 @@
 #include "State.h"
 
 void IFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource,
-                                    D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState) const
+                                    D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState)
 {
     if (InBeforeState == InAfterState)
         return;
@@ -19,6 +19,32 @@ void IFeature_Dx12::ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID
     barrier.Transition.StateAfter = InAfterState;
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     InCommandList->ResourceBarrier(1, &barrier);
+}
+
+bool IFeature_Dx12::TryResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource,
+                                       const CustomOptional<int32_t, NoDefault>& InBeforeState,
+                                       D3D12_RESOURCE_STATES InAfterState)
+{
+    if (InCommandList != nullptr && InResource != nullptr && InBeforeState.has_value())
+    {
+        ResourceBarrier(InCommandList, InResource, (D3D12_RESOURCE_STATES) InBeforeState.value(), InAfterState);
+        return true;
+    }
+
+    return false;
+}
+
+bool IFeature_Dx12::TryResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource,
+                                       D3D12_RESOURCE_STATES InBeforeState,
+                                       const CustomOptional<int32_t, NoDefault>& InAfterState)
+{
+    if (InCommandList != nullptr && InResource != nullptr && InAfterState.has_value())
+    {
+        ResourceBarrier(InCommandList, InResource, InBeforeState, (D3D12_RESOURCE_STATES) InAfterState.value());
+        return true;
+    }
+
+    return false;
 }
 
 bool IFeature_Dx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList,
@@ -36,7 +62,6 @@ bool IFeature_Dx12::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCo
         OutputScaler = std::make_unique<OS_Dx12>("Output Scaling", InDevice, (TargetWidth() < DisplayWidth()));
         RCAS = std::make_unique<RCAS_Dx12>("RCAS", InDevice);
         Bias = std::make_unique<Bias_Dx12>("Bias", InDevice); // TODO: not needed on DLSS/DLSSD
-        Magnifier = std::make_unique<Magnifier_Dx12>("Magnifier", InDevice);
     }
 
     return result;
@@ -187,32 +212,6 @@ bool IFeature_Dx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX
                       return false;
                   }
                   return true;
-              } });
-    }
-
-    if (Magnifier->ShouldRun())
-    {
-        pipeline.push_back(
-            { // Setup
-              [&](ID3D12Resource* nextOutput) -> ID3D12Resource*
-              {
-                  if (Magnifier->CreateBufferResource(Device, nextOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
-                  {
-                      Magnifier->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                      return Magnifier->Buffer();
-                  }
-                  return nullptr;
-              },
-
-              // Dispatch
-              [&](ID3D12Resource* input, ID3D12Resource* output) -> bool
-              {
-                  if (!Magnifier->CanRender() || !paramMotion || !paramOutput)
-                      return true;
-
-                  Magnifier->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-                  return Magnifier->Dispatch(InCommandList, input, output);
               } });
     }
 

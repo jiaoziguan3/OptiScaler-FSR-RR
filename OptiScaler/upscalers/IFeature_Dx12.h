@@ -34,17 +34,25 @@ class IFeature_Dx12 : public virtual IFeature
     std::unique_ptr<Bias_Dx12> Bias = nullptr;
     std::unique_ptr<Magnifier_Dx12> Magnifier = nullptr;
 
-    void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource,
-                         D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState) const;
+    static void ResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource,
+                                D3D12_RESOURCE_STATES InBeforeState, D3D12_RESOURCE_STATES InAfterState);
 
-    virtual bool InitInternal(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters) = 0;
-    virtual bool EvaluateInternal(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters) = 0;
+    static bool TryResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource,
+                                   const CustomOptional<int32_t, NoDefault>& InBeforeState,
+                                   D3D12_RESOURCE_STATES InAfterState);
+
+    static bool TryResourceBarrier(ID3D12GraphicsCommandList* InCommandList, ID3D12Resource* InResource,
+                                   D3D12_RESOURCE_STATES InBeforeState,
+                                   const CustomOptional<int32_t, NoDefault>& InAfterState);
+
+    virtual bool InitInternal(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters) { return true; };
+    virtual bool EvaluateInternal(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters) { return true; };
 
   public:
-    bool Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters);
-    bool Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters);
+    virtual bool Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters);
+    virtual bool Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_NGX_Parameter* InParameters);
 
     IFeature_Dx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters);
 
-    ~IFeature_Dx12();
+    virtual ~IFeature_Dx12();
 };

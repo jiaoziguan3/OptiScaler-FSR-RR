@@ -34,7 +34,7 @@ inline HRESULT AntiLag2::al2_sleep()
 
     // log_event("al2_sleep", "{}", get_timestamp() - pre_sleep);
 
-    LOG_TRACE_LOWLATENCY("FSR Anti-Lag 2.0 Call Spot: {}",
+    LOG_TRACE_LOWLATENCY("FSR Latency Reduction 2.0 Call Spot: {}",
                          current_call_spot == CallSpot::SimulationStart ? "SimulationStart" : "SleepCall");
 
     return result;
@@ -42,7 +42,11 @@ inline HRESULT AntiLag2::al2_sleep()
 
 void AntiLag2::set_fg_type(bool interpolated, uint64_t frame_id)
 {
-    AMD::AntiLag2DX12::SetFrameGenFrameType(&dx12_ctx, interpolated);
+    if (effective_fg_state)
+    {
+        // log_event("al2_set_fg_type", "{}", reflex_frame_id);
+        AMD::AntiLag2DX12::SetFrameGenFrameType(&dx12_ctx, interpolated);
+    }
 }
 
 bool AntiLag2::init(IUnknown* pDevice)
@@ -67,12 +71,12 @@ bool AntiLag2::init(IUnknown* pDevice)
             Amdxc64Hooks::giveGameAl2Proxy = true;
             if (init_return == S_OK)
             {
-                LOG_INFO("FSR Anti-Lag 2.0 DX12 initialized");
+                LOG_INFO("FSR Latency Reduction 2.0 DX12 initialized");
                 return true;
             }
             else
             {
-                LOG_INFO("FSR Anti-Lag 2.0 DX12 initialization failed");
+                LOG_INFO("FSR Latency Reduction 2.0 DX12 initialization failed");
             }
         }
         else
@@ -82,18 +86,40 @@ bool AntiLag2::init(IUnknown* pDevice)
             HRESULT init_return = AMD::AntiLag2DX11::Initialize(&dx11_ctx);
             if (init_return == S_OK)
             {
-                LOG_INFO("FSR Anti-Lag 2.0 DX11 initialized");
+                LOG_INFO("FSR Latency Reduction 2.0 DX11 initialized");
                 return true;
             }
             else
             {
-                LOG_INFO("FSR Anti-Lag 2.0 DX11 initialization failed");
+                LOG_INFO("FSR Latency Reduction 2.0 DX11 initialization failed");
             }
         }
     }
     else
     {
-        LOG_WARN("Initialization of FSR Anti-Lag 2.0 was attempted while the context is not null");
+        LOG_WARN("Initialization of FSR Latency Reduction 2.0 was attempted while the context is not null");
+    }
+
+    return false;
+}
+
+// Only DX12 is supported
+bool AntiLag2::init_using_ctx(void* context)
+{
+    if (!context)
+    {
+        LOG_ERROR("FSR Latency Reduction 2.0 init_using_ctx called with null context");
+        return false;
+    }
+
+    // TODO: try to distinguish between DX11 and DX12 contexts
+    dx12_ctx = *reinterpret_cast<AMD::AntiLag2DX12::Context*>(context);
+
+    if (dx12_ctx.m_pAntiLagAPI)
+    {
+        inited_using_context = true;
+        LOG_INFO("FSR Latency Reduction 2.0 DX12 initialized using existing context");
+        return true;
     }
 
     return false;
@@ -101,6 +127,13 @@ bool AntiLag2::init(IUnknown* pDevice)
 
 void AntiLag2::deinit()
 {
+    if (inited_using_context)
+    {
+        LOG_INFO("FSR Latency Reduction 2.0 DX12 deinit called while inited using context, skipping deinitialization");
+        inited_using_context = false;
+        return;
+    }
+
     {
         std::scoped_lock lock(amdxc64_load_mutex);
 
@@ -117,11 +150,11 @@ void AntiLag2::deinit()
         AMD::AntiLag2DX12::Update(&dx12_ctx, false, 0);
 
         if (!AMD::AntiLag2DX12::DeInitialize(&dx12_ctx))
-            LOG_INFO("FSR Anti-Lag 2.0 DX12 deinitialized");
+            LOG_INFO("FSR Latency Reduction 2.0 DX12 deinitialized");
     }
 
     if (dx11_ctx.m_pAntiLagAPI && !AMD::AntiLag2DX11::DeInitialize(&dx11_ctx))
-        LOG_INFO("FSR Anti-Lag 2.0 DX11 deinitialized");
+        LOG_INFO("FSR Latency Reduction 2.0 DX11 deinitialized");
 }
 
 void* AntiLag2::get_tech_context()
@@ -177,7 +210,11 @@ void AntiLag2::set_marker(IUnknown* pDevice, const MarkerParams& marker_params)
         break;
 
     case MarkerType::PRESENT_START:
-        AMD::AntiLag2DX12::MarkEndOfFrameRendering(&dx12_ctx);
+        if (effective_fg_state)
+        {
+            // log_event("al2_end_of_rendering", "{}", reflex_frame_id);
+            AMD::AntiLag2DX12::MarkEndOfFrameRendering(&dx12_ctx);
+        }
         break;
     }
 }

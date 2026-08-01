@@ -85,6 +85,18 @@ HRESULT DxgiSpoofing::hkGetDesc3(IDXGIAdapter4* This, DXGI_ADAPTER_DESC3* pDesc)
             LOG_DEBUG("spoofing");
 #endif
         }
+
+        auto caller = Util::WhoIsTheCaller(_ReturnAddress());
+        if (caller.starts_with("amdxcffx64") || caller.starts_with("amd_fidelityfx_upscaler_dx12"))
+        {
+            const auto primaryGpu = IdentifyGpu::getPrimaryGpu();
+
+            if (primaryGpu.fsr4ForcedSupport && primaryGpu.fsr4Support == FSR4Support::INT8)
+            {
+                LOG_TRACE("Spoofing vendor AMD for {}", caller);
+                pDesc->VendorId = VendorId::AMD;
+            }
+        }
     }
 
     AttachToAdapter(This);
@@ -186,17 +198,6 @@ HRESULT DxgiSpoofing::hkGetDesc1(IDXGIAdapter1* This, DXGI_ADAPTER_DESC1* pDesc)
 #ifdef _DEBUG
             LOG_DEBUG("spoofing");
 #endif
-        }
-
-        if (caller.starts_with("amdxcffx64") || caller.starts_with("amd_fidelityfx_upscaler_dx12"))
-        {
-            const auto primaryGpu = IdentifyGpu::getPrimaryGpu();
-
-            if (primaryGpu.fsr4ForcedSupport && primaryGpu.fsr4Support == FSR4Support::INT8)
-            {
-                LOG_TRACE("Spoofing vendor AMD for {}", caller);
-                pDesc->VendorId = VendorId::AMD;
-            }
         }
     }
 

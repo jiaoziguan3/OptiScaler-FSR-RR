@@ -1,0 +1,306 @@
+
+
+  pch.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\misc\Quirks.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“pch.cpp”)
+  
+  FSR4Upgrade.cpp
+  Amdxc64_Hooks.cpp
+  DLSSG_Dx12.cpp
+  FSRFG_Dx12.cpp
+  IFGFeature.cpp
+  IFGFeature_Dx12.cpp
+  Nvngx_FG.cpp
+  FSR4ModelSelection.cpp
+  D3D12_Hooks.cpp
+  DxgiFactory_Hooks.cpp
+  DxgiFactory_WrappedCalls.cpp
+  Dxgi_Hooks.cpp
+  FG_Hooks.cpp
+  Kernel_Hooks.cpp
+  LibraryLoad_Hooks.cpp
+  VulkanwDx12_Hooks.cpp
+  Xell_Hooks.cpp
+  Streamline_Inputs_Sl1_Dx12.cpp
+  device_info.cpp
+  input_common.cpp
+  input_reflex.cpp
+  input_xell.cpp
+  input_antilag2.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\low_latency\input\input_common.cpp(336,52): warning C4244: “参数”: 从“const uint64_t”转换到“const _Ty”，可能丢失数据 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+j:\OptiScaler-master-0.10-2\OptiScaler\low_latency\input\input_common.cpp(336,52): warning C4244:         with [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+j:\OptiScaler-master-0.10-2\OptiScaler\low_latency\input\input_common.cpp(336,52): warning C4244:         [ [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+j:\OptiScaler-master-0.10-2\OptiScaler\low_latency\input\input_common.cpp(336,52): warning C4244:             _Ty=unsigned int [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+j:\OptiScaler-master-0.10-2\OptiScaler\low_latency\input\input_common.cpp(336,52): warning C4244:         ] [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“/low_latency/input/input_common.cpp”)
+  
+  input_system.cpp
+  input_system_cursor.cpp
+  input_system_detours.cpp
+  input_system_directinput.cpp
+  input_system_gameinput.cpp
+  input_system_hid.cpp
+  input_system_messages.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\include\device_info\device_info.cpp(1383,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“/include/device_info/device_info.cpp”)
+  
+  input_system_raw.cpp
+  input_system_window.cpp
+  input_system_windows_hooks.cpp
+  input_system_xinput.cpp
+  IdentifyGpu.cpp
+  FSR2_Dx11.cpp
+  FSR2_Vk.cpp
+  XeSS_Dx11.cpp
+  ll_util.cpp
+  log.cpp
+  low_latency.cpp
+  low_latency_d3d.cpp
+  ll_antilag2.cpp
+  ll_antilag_vk.cpp
+  ll_latencyflex.cpp
+  ll_xell.cpp
+  low_latency_vk.cpp
+  nvapi_calls.cpp
+  NVNGX_Parameter.cpp
+  OptiTypes.cpp
+  DI_Dx12.cpp
+  HCC_Dx12.cpp
+  HudCopy_Dx12.cpp
+  Magnifier_Common.cpp
+  Magnifier_Dx12.cpp
+  DT_Vk.cpp
+  OS_Vk.cpp
+  RCAS_Common.cpp
+  RCAS_Vk.cpp
+  Shader_Common.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\shaders\magnifier\Magnifier_Common.cpp(40,51): warning C4244: “=”: 从“LONG”转换到“float”，可能丢失数据 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“/shaders/magnifier/Magnifier_Common.cpp”)
+  
+j:\OptiScaler-master-0.10-2\OptiScaler\shaders\magnifier\Magnifier_Common.cpp(41,51): warning C4244: “=”: 从“LONG”转换到“float”，可能丢失数据 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“/shaders/magnifier/Magnifier_Common.cpp”)
+  
+  RUI_Dx12.cpp
+  RC_Vk.cpp
+  Shader_Dx12.cpp
+  Shader_Vk.cpp
+  Dxgi_Spoofing.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\shaders\output_scaling\OS_Common.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“/shaders/output_scaling/OS_Vk.cpp”)
+  
+  User32_Spoofing.cpp
+  Vulkan_Spoofing.cpp
+  input_uell.cpp
+  FSR2Feature_VkOnDx12_212.cpp
+  FFXFeature_VkOn12.cpp
+  FSR31Feature.cpp
+  IFeature_VkwDx12.cpp
+  UpscalerTime_Dx11.cpp
+  UpscalerTime_Dx12.cpp
+  UpscalerTime_Vk.cpp
+  dx11_with_dx12.cpp
+  with_dx12.cpp
+  dx11_with_dx12_sc.cpp
+C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.44.35207\include\optional(82,17): warning C4244: “初始化”: 从“int64_t”转换到“unsigned int”，可能丢失数据 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“/low_latency/input/input_uell.cpp”)
+      C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.44.35207\include\optional(82,17):
+      模板实例化上下文(最早的实例化上下文)为
+          j:\OptiScaler-master-0.10-2\OptiScaler\low_latency\input\input_uell.cpp(44,60):
+          查看对正在编译的函数 模板 实例化“std::optional<UINT>::optional<int64_t&,0>(_Ty2) noexcept”的引用
+          with
+          [
+              _Ty2=int64_t &
+          ]
+              j:\OptiScaler-master-0.10-2\OptiScaler\low_latency\input\input_uell.cpp(44,17):
+              请参阅 "InputUeLowLatency::tickStart" 中对 "std::optional<UINT>::optional" 的第一个引用
+          C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Tools\MSVC\14.44.35207\include\optional(272,18):
+          查看对正在编译的函数 模板 实例化“std::_Optional_construct_base<_Ty>::_Optional_construct_base<int64_t&>(std::in_place_t,int64_t &)”的引用
+          with
+          [
+              _Ty=UINT
+          ]
+          j:\OptiScaler-master-0.10-2\OptiScaler\low_latency\input\input_uell.cpp(82,1):
+          查看对正在编译的函数 模板 实例化“std::_Optional_destruct_base<_Ty,true>::_Optional_destruct_base<int64_t&>(std::in_place_t,int64_t &) noexcept”的引用
+          with
+          [
+              _Ty=UINT
+          ]
+  
+  wrapped_factory.cpp
+  FSR3_Dx12_FG.cpp
+  Streamline_Inputs_Dx12.cpp
+  XeFG_Dx12.cpp
+  Streamline_Hooks.cpp
+  Hudfix_Dx12.cpp
+  FfxApiExe_Dx12.cpp
+  FfxApi_Dx12_FG.cpp
+  FfxApi_Vk.cpp
+  Upscaler_Inputs_Dx12.cpp
+  Upscaler_Inputs_Dx11wDx12.cpp
+  XeSS_Base.cpp
+  XeSS_Common.cpp
+  XeSS_Dbg.cpp
+  XeSS_Vulkan.cpp
+  FrameLimit.cpp
+  fakenvapi.cpp
+  NvApiHooks.cpp
+  NvApiTypes.cpp
+  Reflex_Hooks.cpp
+  ResTrack_dx12.cpp
+  HC_Dx12.cpp
+  RF_Dx12.cpp
+  DS_Dx12.cpp
+  DT_Dx11.cpp
+  DLSSDFeature.cpp
+  DLSSDFeature_Dx11.cpp
+  DLSSDFeature_Dx12.cpp
+  DLSSDFeature_Vk.cpp
+  DLSSFeature.cpp
+  DLSSFeature_Dx11.cpp
+  DLSSFeature_Dx12.cpp
+  DLSSFeature_Vk.cpp
+  FeatureProvider_Dx11.cpp
+  FeatureProvider_Dx12.cpp
+  FeatureProvider_Vk.cpp
+  FSR2Feature_212.cpp
+  FSR2Feature_Dx11On12_212.cpp
+  FSR2Feature_Dx12_212.cpp
+  FSR2Feature_Vk_212.cpp
+  FFXFeature.cpp
+  FSR31Feature_Dx11.cpp
+  FFXFeature_Dx11On12.cpp
+  FFXFeature_Dx12.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\include\fsr31\dx11\ffx_dx11.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“/upscalers/fsr31/FSR31Feature_Dx11.cpp”)
+  
+  FFXFeature_Vk.cpp
+  IFeature_Dx11.cpp
+  IFeature_Dx11wDx12.cpp
+  Config.cpp
+  Translation.cpp
+  FSR2Feature.cpp
+  FSR2Feature_Dx11.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\translation\Translation.cpp(582,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“/translation/Translation.cpp”)
+  
+  FSR2Feature_Dx11On12.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\include\fsr31\dx11\ffx_dx11.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“/upscalers/FeatureProvider_Dx11.cpp”)
+  
+  FSR2Feature_Dx12.cpp
+  FSR2Feature_Vk.cpp
+  IFeature.cpp
+  IFeature_Dx12.cpp
+  FfxApi_Dx12.cpp
+  FSR2_Dx12.cpp
+  FSR3_Dx12.cpp
+  D3D11_Hooks.cpp
+  Vulkan_Hooks.cpp
+  menu_common.cpp
+  menu_dx_base.cpp
+  menu_dx11.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\menu\menu_common.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  menu_dx12.cpp
+  menu_overlay_base.cpp
+  menu_overlay_dx.cpp
+  menu_overlay_vk.cpp
+  wrapped_swapchain.cpp
+  Logger.cpp
+  NVNGX.cpp
+  NVNGX_DLSS_Dx11.cpp
+  NVNGX_DLSS_Dx12.cpp
+  dllmain.cpp
+  NVNGX_DLSS_Vk.cpp
+  XeSSFeature.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\inputs\NVNGX_DLSS_Dx12.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  XeSSFeature_Dx11.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\dllmain.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  XeSSFeature_Dx11on12.cpp
+  XeSSFeature_Dx12.cpp
+  scanner.cpp
+  Bias_Dx11.cpp
+  Bias_Dx12.cpp
+  FT_Dx12.cpp
+  OS_Dx11.cpp
+  OS_Dx12.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\shaders\output_scaling\OS_Common.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“/shaders/output_scaling/OS_Dx11.cpp”)
+  
+  RCAS_Dx11.cpp
+  RCAS_Dx12.cpp
+  XeSSFeature_Vk.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\shaders\output_scaling\OS_Common.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“/shaders/output_scaling/OS_Dx12.cpp”)
+  
+  Util.cpp
+  version_check.cpp
+  XeSS_Debug.cpp
+  XeSS_Dx12.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\menu\menu_common.cpp(695,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“/menu/menu_common.cpp”)
+  
+j:\OptiScaler-master-0.10-2\OptiScaler\hooks\Advapi32_Hooks.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“/dllmain.cpp”)
+  
+  imgui_impl_dx11.cpp
+  imgui_impl_dx12.cpp
+  imgui_impl_uwp.cpp
+  imgui_impl_vulkan.cpp
+  imgui_impl_win32.cpp
+  parameters.cpp
+  imgui.cpp
+  imgui_draw.cpp
+  imgui_tables.cpp
+  imgui_widgets.cpp
+  imgui_freetype.cpp
+j:\OptiScaler-master-0.10-2\OptiScaler\misc\Quirks.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  (编译源文件“include/imgui/imgui_impl_win32.cpp”)
+  
+LINK : warning C4744: “static struct std::atomic<class std::shared_ptr<class LowLatencyTech> > InputCommon::currently_active_tech”在“j:\optiscaler-master-0.10-2\optiscaler\nvapi\fakenvapi\low_latency_d3d.cpp”和“j:\optiscaler-master-0.10-2\optiscaler\hooks\amdxc64_hooks.cpp”中具有不同的类型: “__declspec(align(16)) struct (16 bytes)”和“struct (16 bytes)” [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+    正在创建库 j:\OptiScaler-master-0.10-2\x64\Release\OptiScaler.lib 和对象 j:\OptiScaler-master-0.10-2\x64\Release\OptiScaler.exp
+LINK : warning LNK4098: 默认库“LIBCMT”与其他库的使用冲突；请使用 /NODEFAULTLIB:library [j:\OptiScaler-master-0.10-2\OptiScaler\OptiScaler.vcxproj]
+  正在生成代码
+  Previous IPDB not found, fall back to full compilation.
+  All 35410 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  已完成代码的生成
+  OptiScaler.vcxproj -> j:\OptiScaler-master-0.10-2\x64\Release\OptiScaler.dll
+  移动了         1 个文件。
+  已复制         1 个文件。
+  系统找不到指定的路径。
+  已复制         1 个文件。
+  系统找不到指定的路径。
+  系统找不到指定的路径。
+  系统找不到指定的路径。
+  系统找不到指定的路径。
+  Downloading fakenvapi...
+  GitHub unreachable, copying fakenvapi from local...
+  fakenvapi copied from local
+  Downloading dlssg-to-fsr3...
+  dlssg-to-fsr3 downloaded from GitHub
+  J:\OptiScaler-master-0.10-2\streamline\NvLowLatencyVk.dll
+  J:\OptiScaler-master-0.10-2\streamline\nvngx_deepdvc.dll
+  J:\OptiScaler-master-0.10-2\streamline\nvngx_dlss.dll
+  J:\OptiScaler-master-0.10-2\streamline\nvngx_dlssd.dll
+  J:\OptiScaler-master-0.10-2\streamline\nvngx_dlssg.dll
+  J:\OptiScaler-master-0.10-2\streamline\sl.common.dll
+  J:\OptiScaler-master-0.10-2\streamline\sl.deepdvc.dll
+  J:\OptiScaler-master-0.10-2\streamline\sl.directsr.dll
+  J:\OptiScaler-master-0.10-2\streamline\sl.dlss.dll
+  J:\OptiScaler-master-0.10-2\streamline\sl.dlss_d.dll
+  J:\OptiScaler-master-0.10-2\streamline\sl.dlss_g.dll
+  J:\OptiScaler-master-0.10-2\streamline\sl.interposer.dll
+  J:\OptiScaler-master-0.10-2\streamline\sl.nis.dll
+  J:\OptiScaler-master-0.10-2\streamline\sl.nvperf.dll
+  J:\OptiScaler-master-0.10-2\streamline\sl.pcl.dll
+  J:\OptiScaler-master-0.10-2\streamline\sl.reflex.dll
+  复制了 16 个文件
+  Downloading OptiPatcher.asi...
+  OptiPatcher.asi downloaded from GitHub
+  已复制         1 个文件。
+  已复制         1 个文件。
+  已复制         1 个文件。
+  已复制         1 个文件。
+  j:\OptiScaler-master-0.10-2\external\directx_agility_sdk\lib\D3D12Core.dll
+  已复制         1 个文件。
+  已复制         1 个文件。
+  已复制         1 个文件。

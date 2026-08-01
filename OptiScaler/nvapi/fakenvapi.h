@@ -39,11 +39,9 @@ class fakenvapi
     static void deinit();
     static void* queryInterface(NvU32 id);
     static void reportFGPresent(IDXGISwapChain* pSwapChain, bool fg_state, bool frame_interpolated);
-    static bool forceMode(IUnknown* device, LowLatencyMode mode);
+    static bool setModeAndContext(void* context, LowLatencyMode mode);
     static bool isLowLatencyActive();
-
     static LowLatencyMode getCurrentMode();
-    static void* getCurrentContext();
 
     static bool isUsingAsMainNvapi();
     static void setUsingAsMainNvapi(bool usingAsMain);

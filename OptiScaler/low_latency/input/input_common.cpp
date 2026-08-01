@@ -30,60 +30,6 @@ bool InputCommon::deinit_current_tech()
     return false;
 }
 
-bool InputCommon::init_tech(IUnknown* pDevice, LowLatencyMode desiredMode)
-{
-    if (!currently_active_tech.load() && delay_deinit == 0)
-    {
-        auto try_init = [&](auto low_latency_tech, const char* name) -> bool
-        {
-            if (low_latency_tech->init(pDevice))
-            {
-                LOG_INFO("LowLatency algo: {}", name);
-                currently_active_tech.store(std::move(low_latency_tech));
-                return true;
-            }
-            return false;
-        };
-
-        bool isInitialized = false;
-        switch (desiredMode)
-        {
-        case LowLatencyMode::XeLL:
-            isInitialized = try_init(std::make_shared<XeLL>(), "XeLL");
-            break;
-        case LowLatencyMode::AntiLag2:
-            isInitialized = try_init(std::make_shared<AntiLag2>(), "AntiLag2");
-            break;
-        case LowLatencyMode::Reflex:
-            // isInitialized = try_init(std::make_shared<Reflex>(), "Reflex");
-            break;
-        case LowLatencyMode::LatencyFlex:
-            isInitialized = try_init(std::make_shared<LatencyFlex>(), "LatencyFlex");
-            break;
-        default:
-            break;
-        }
-
-        if (!isInitialized && desiredMode != LowLatencyMode::LatencyFlex)
-        {
-            isInitialized = try_init(std::make_shared<LatencyFlex>(), "LatencyFlex (Fallback)");
-            if (isInitialized)
-            {
-                Config::Instance()->LowLatencyOutput.set_volatile_value(LowLatencyMode::LatencyFlex);
-            }
-        }
-
-        if (auto current_tech = currently_active_tech.load(); current_tech && isInitialized)
-        {
-            activeOutput = current_tech->get_mode();
-            current_tech->set_sleep_mode(&get_sleep_copy(activeInput)); // Restore any potential sleep mode
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool InputCommon::update_low_latency_tech(IUnknown* pDevice, std::optional<LowLatencyMode> mode)
 {
     if (avaliableInputs.count() == 0)
@@ -192,22 +138,55 @@ bool InputCommon::update_low_latency_tech(IUnknown* pDevice, std::optional<LowLa
             desiredMode = LowLatencyMode::LatencyFlex;
     }
 
-    // Force XeLL when using XeFG
-    if (State::Instance().activeFgOutput == FGOutput::XeFG)
-        desiredMode = LowLatencyMode::XeLL;
-
     if (activeOutput == desiredMode)
-    {
-        delay_deinit = 0;
         return true;
-    }
 
     // Beyond this point activeOutput needs changing
 
-    std::scoped_lock lock(create_tech_mutex);
+    if (!currently_active_tech.load() && delay_deinit == 0)
+    {
+        auto try_init = [&](auto low_latency_tech, const char* name) -> bool
+        {
+            if (low_latency_tech->init(pDevice))
+            {
+                LOG_INFO("LowLatency algo: {}", name);
+                currently_active_tech.store(std::move(low_latency_tech));
+                return true;
+            }
+            return false;
+        };
 
-    if (init_tech(pDevice, desiredMode))
-        return true;
+        bool isInitialized = false;
+        switch (desiredMode)
+        {
+        case LowLatencyMode::XeLL:
+            isInitialized = try_init(std::make_shared<XeLL>(), "XeLL");
+            break;
+        case LowLatencyMode::AntiLag2:
+            isInitialized = try_init(std::make_shared<AntiLag2>(), "AntiLag2");
+            break;
+        case LowLatencyMode::Reflex:
+            // isInitialized = try_init(std::make_shared<Reflex>(), "Reflex");
+            break;
+        case LowLatencyMode::LatencyFlex:
+            isInitialized = try_init(std::make_shared<LatencyFlex>(), "LatencyFlex");
+            break;
+        default:
+            break;
+        }
+
+        if (!isInitialized && desiredMode != LowLatencyMode::LatencyFlex)
+        {
+            isInitialized = try_init(std::make_shared<LatencyFlex>(), "LatencyFlex (Fallback)");
+        }
+
+        if (auto current_tech = currently_active_tech.load(); current_tech && isInitialized)
+        {
+            activeOutput = current_tech->get_mode();
+            current_tech->set_sleep_mode(&get_sleep_copy(activeInput)); // Restore any potential sleep mode
+            return true;
+        }
+    }
 
     auto try_reinit = [&]() -> bool
     {
@@ -217,7 +196,7 @@ bool InputCommon::update_low_latency_tech(IUnknown* pDevice, std::optional<LowLa
             return false;
         }
 
-        return init_tech(pDevice, desiredMode);
+        return update_low_latency_tech(pDevice, desiredMode);
     };
 
     // WAR: FSR FG might still be using AntiLag 2, give Opti time to set AL2 context to null
@@ -323,7 +302,7 @@ InputResult InputCommon::sleep(const InputContext& inputContext, IUnknown* pDevi
     if (auto current_tech = currently_active_tech.load())
         current_tech->sleep(frame_id);
     else
-        return InputResult::NoReadyOutput;
+        return InputResult::GenericError;
 
     return InputResult::Ok;
 }
@@ -365,7 +344,7 @@ InputResult InputCommon::set_marker(const InputContext& inputContext, IUnknown* 
     if (auto current_tech = currently_active_tech.load())
         current_tech->set_marker(pDevice, marker_params);
     else
-        return InputResult::NoReadyOutput;
+        return InputResult::GenericError;
 
     LOG_TRACE_LOWLATENCY("{}: {}", magic_enum::enum_name(marker_params.marker_type), marker_params.frame_id);
 
@@ -375,8 +354,10 @@ InputResult InputCommon::set_marker(const InputContext& inputContext, IUnknown* 
 InputResult InputCommon::set_async_marker(const InputContext& inputContext, ID3D12CommandQueue* pCommandQueue,
                                           const MarkerParams& marker_params)
 {
-    // Always allow Opti's local context through, like XeLL or AL2
-    if (inputContext.caller != activeInput && !inputContext.localContext)
+    // Always allow Opti's XeLL context through
+    bool localXell = inputContext.caller == LowLatencyInput::XeLL && inputContext.localContext;
+
+    if (inputContext.caller != activeInput && !localXell)
         return InputResult::UsingDifferentInput;
 
     if (!currently_active_tech.load()) // can't init using ID3D12CommandQueue, can only check if available
@@ -398,7 +379,7 @@ InputResult InputCommon::set_async_marker(const InputContext& inputContext, ID3D
     if (auto current_tech = currently_active_tech.load())
         current_tech->set_async_marker(pCommandQueue, marker_params);
     else
-        return InputResult::NoReadyOutput;
+        return InputResult::GenericError;
 
     LOG_TRACE_LOWLATENCY("{}: {}", magic_enum::enum_name(marker_params.marker_type), marker_params.frame_id);
 
@@ -422,7 +403,7 @@ InputResult InputCommon::set_sleep_mode(const InputContext& inputContext, IUnkno
     if (auto current_tech = currently_active_tech.load())
         current_tech->set_sleep_mode(sleep_mode);
     else
-        return InputResult::NoReadyOutput;
+        return InputResult::GenericError;
 
     return InputResult::Ok;
 }
@@ -444,7 +425,7 @@ InputResult InputCommon::get_sleep_status(const InputContext& inputContext, IUnk
     if (auto current_tech = currently_active_tech.load())
         current_tech->get_sleep_status(sleep_params);
     else
-        return InputResult::NoReadyOutput;
+        return InputResult::GenericError;
 
     return InputResult::Ok;
 }
@@ -749,7 +730,7 @@ xell_result_t InputCommon::pass_xellSetFgEnabled(const InputContext& inputContex
     return XELL_RESULT_SUCCESS;
 }
 
-xell_result_t InputCommon::pass_xellSetGeneratedFramesCount(const InputContext& inputContext, uint32_t frameId,
+xell_result_t InputCommon::pass_xellSetGeneratedFramesCount(const InputContext& inputContext, uint32_t param1,
                                                             uint32_t framesCount)
 {
     if (inputContext.caller == LowLatencyInput::XeLL && activeOutput == LowLatencyMode::XeLL)
@@ -757,7 +738,7 @@ xell_result_t InputCommon::pass_xellSetGeneratedFramesCount(const InputContext& 
         if (auto current_tech = currently_active_tech.load())
         {
             auto xell_tech = std::static_pointer_cast<XeLL>(current_tech);
-            return xell_tech->xellSetGeneratedFramesCount(frameId, framesCount);
+            return xell_tech->xellSetGeneratedFramesCount(param1, framesCount);
         }
 
         return XELL_RESULT_ERROR_UNKNOWN;

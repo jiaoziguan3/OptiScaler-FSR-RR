@@ -8,38 +8,36 @@
 #include <proxies/D3d12_Proxy.h>
 #include "nvapi/NvApiTypes.h"
 #include <hooks/Amdxc64_Hooks.h>
-
 using Microsoft::WRL::ComPtr;
 
 // Prioritize Nvidia cards that can run DLSS and are connected to a display
-// void sortGpus(std::vector<GpuInformation>& gpus)
-//{
-//    std::sort(gpus.begin(), gpus.end(),
-//              [](const GpuInformation& a, const GpuInformation& b)
-//              {
-//                  auto isPreferredNvidia = [](const GpuInformation& gpu)
-//                  {
-//                      bool isNvidia = (gpu.vendorId == VendorId::Nvidia);
-//                      return isNvidia && gpu.dlssCapable && !gpu.noDisplayConnected;
-//                  };
-//
-//                  bool aIsPreferred = isPreferredNvidia(a);
-//                  bool bIsPreferred = isPreferredNvidia(b);
-//
-//                  // If one is a preferred and the other isn't then the preferred one should be sorted first
-//                  if (aIsPreferred != bIsPreferred)
-//                  {
-//                      return aIsPreferred;
-//                  }
-//
-//                  if (a.softwareAdapter)
-//                      return false;
-//
-//                  // Fallback on VRAM amount
-//                  return a.dedicatedVramInBytes > b.dedicatedVramInBytes;
-//              });
-//}
+void sortGpus(std::vector<GpuInformation>& gpus)
+{
+    std::sort(gpus.begin(), gpus.end(),
+              [](const GpuInformation& a, const GpuInformation& b)
+              {
+                  auto isPreferredNvidia = [](const GpuInformation& gpu)
+                  {
+                      bool isNvidia = (gpu.vendorId == VendorId::Nvidia);
+                      return isNvidia && gpu.dlssCapable && !gpu.noDisplayConnected;
+                  };
 
+                  bool aIsPreferred = isPreferredNvidia(a);
+                  bool bIsPreferred = isPreferredNvidia(b);
+
+                  // If one is a preferred and the other isn't then the preferred one should be sorted first
+                  if (aIsPreferred != bIsPreferred)
+                  {
+                      return aIsPreferred;
+                  }
+
+                  if (a.softwareAdapter)
+                      return false;
+
+                  // Fallback on VRAM amount
+                  return a.dedicatedVramInBytes > b.dedicatedVramInBytes;
+              });
+}
 std::vector<GpuInformation> IdentifyGpu::checkGpuInfo()
 {
     auto localCachedInfo = std::vector<GpuInformation> {};
@@ -516,7 +514,6 @@ void IdentifyGpu::updateD3d12Capabilities(D3d12Proxy::PFN_D3D12CreateDevice o_D3
                     }
 
                     // Check for native INT8 support
-                    // Don't treat this as real because RDNA3 on Linux may be able to support FP8, useful for FG
                     if (res.fsr4Support == FSR4Support::None)
                     {
                         device_info::AdapterId adapterId(gpuInfo.vendorId, gpuInfo.deviceId, gpuInfo.revisionId);
