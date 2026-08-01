@@ -6,7 +6,8 @@
 enum class Language
 {
     English,
-    Chinese
+    Chinese, // Simplified Chinese
+    TraditionalChinese
 };
 
 namespace Translation

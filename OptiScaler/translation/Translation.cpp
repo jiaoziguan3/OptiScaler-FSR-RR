@@ -6,10 +6,12 @@ static Language g_currentLanguage = Language::English;
 static bool g_initialized = false;
 
 static std::unordered_map<std::string, std::string> g_chineseTranslations;
+static std::unordered_map<std::string, std::string> g_traditionalChineseTranslations;
 
 static const std::vector<Language> g_allLanguages = {
     Language::English,
     Language::Chinese,
+    Language::TraditionalChinese,
 };
 
 namespace Translation
@@ -33,6 +35,8 @@ const char* GetLanguageName(Language lang)
         return "English";
     case Language::Chinese:
         return "\xe7\xae\x80\xe4\xbd\x93\xe4\xb8\xad\xe6\x96\x87";
+    case Language::TraditionalChinese:
+        return "\xe7\xb9\x81\xe9\xab\x94\xe4\xb8\xad\xe6\x96\x87";
     default:
         return "Unknown";
     }
@@ -49,10 +53,17 @@ const char* Get(const char* key)
         return key;
 
     auto it = g_chineseTranslations.find(key);
-    if (it != g_chineseTranslations.end())
-        return it->second.c_str();
+    if (it == g_chineseTranslations.end())
+        return key;
 
-    return key;
+    if (g_currentLanguage == Language::TraditionalChinese)
+    {
+        auto traditionalIt = g_traditionalChineseTranslations.find(it->second);
+        if (traditionalIt != g_traditionalChineseTranslations.end())
+            return traditionalIt->second.c_str();
+    }
+
+    return it->second.c_str();
 }
 
 const char* Get(const std::string& key)
@@ -1330,7 +1341,9 @@ void Init()
 
 
 };
-}
-}
 
- 
+    g_traditionalChineseTranslations = {
+#include "TraditionalChineseTranslations.inc"
+    };
+}
+}
