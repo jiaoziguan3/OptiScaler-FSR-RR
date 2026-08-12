@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "dependencies": [
+    {
+      "id": "solution",
+      "path": "OptiScaler.sln",
+      "type": "file",
+      "allowEmpty": false,
+      "source": "OptiScaler source tree"
+    },
+    {
+      "id": "xess-runtime",
+      "path": "external\\xess\\bin",
+      "type": "directory",
+      "pattern": "*.dll",
+      "minimumCount": 4,
+      "source": "Intel XeSS SDK"
+    },
+    {
+      "id": "streamline-runtime",
+      "path": "streamline",
+      "type": "directory",
+      "pattern": "*.dll",
+      "minimumCount": 1,
+      "source": "NVIDIA Streamline runtime"
+    },
+    {
+      "id": "fidelityfx-v1-runtime",
+      "path": "external\\FidelityFX-SDK\\PrebuiltSignedDLL\\amd_fidelityfx_vk.dll",
+      "type": "file",
+      "allowEmpty": false,
+      "source": "FidelityFX SDK v1"
+    },
+    {
+      "id": "fidelityfx-v2-runtime",
+      "path": "external\\FidelityFX-SDK-v2\\Kits\\FidelityFX\\signedbin",
+      "type": "directory",
+      "pattern": "amd_fidelityfx_*_dx12.dll",
+      "minimumCount": 3,
+      "source": "FidelityFX SDK v2"
+    },
+    {
+      "id": "agility-runtime",
+      "path": "external\\directx_agility_sdk\\lib\\D3D12Core.dll",
+      "type": "file",
+      "allowEmpty": false,
+      "source": "DirectX Agility SDK"
+    },
+    {
+      "id": "fakenvapi-fallback",
+      "path": "fakenvapi.dll",
+      "type": "file",
+      "allowEmpty": false,
+      "source": "FakeNVAPI local fallback"
+    },
+    {
+      "id": "dlssg-fallback",
+      "path": "dlssg_to_fsr3_amd_is_better.dll",
+      "type": "file",
+      "allowEmpty": false,
+      "source": "dlssg-to-fsr3 local fallback"
+    },
+    {
+      "id": "optipatcher-fallback",
+      "path": "plugins\\OptiPatcher.asi",
+      "type": "file",
+      "allowEmpty": false,
+      "source": "OptiPatcher local fallback"
+    }
+  ],
+  "externalArtifacts": [
+    {
+      "id": "fakenvapi",
+      "url": "https://github.com/optiscaler/fakenvapi/releases/download/v1.4.1/fakenvapi-v1.4.1.7z",
+      "fallbackPath": "fakenvapi.dll",
+      "destination": "external-cache\\fakenvapi.dll",
+      "archiveEntry": "fakenvapi.dll",
+      "entries": [
+        {
+          "archiveEntry": "fakenvapi.dll",
+          "fallbackPath": "fakenvapi.dll",
+          "destination": "external-cache\\fakenvapi.dll"
+        },
+        {
+          "archiveEntry": "fakenvapi.ini",
+          "fallbackPath": "fakenvapi.ini",
+          "destination": "external-cache\\fakenvapi.ini"
+        }
+      ]
+    },
+    {
+      "id": "dlssg-to-fsr3",
+      "url": "https://github.com/optiscaler/dlssg-to-fsr3/releases/download/0.130/dlssg-to-fsr3-master.zip",
+      "fallbackPath": "dlssg_to_fsr3_amd_is_better.dll",
+      "destination": "external-cache\\dlssg_to_fsr3_amd_is_better.dll",
+      "archiveEntry": "dlssg_to_fsr3_amd_is_better.dll"
+    },
+    {
+      "id": "optipatcher",
+      "url": "https://github.com/optiscaler/OptiPatcher/releases/download/rolling/OptiPatcher.asi",
+      "fallbackPath": "plugins\\OptiPatcher.asi",
+      "destination": "external-cache\\OptiPatcher.asi",
+      "archiveEntry": null
+    }
+  ],
+  "releaseFiles": [
+    {
+      "source": "installer\\dist\\OptiScalerSettings.exe",
+      "destination": "OptiScalerSettings.exe",
+      "type": "file",
+      "allowEmpty": false,
+      "sourceDescription": "OptiScaler settings editor"
+    },
+    {
+      "source": "OptiScaler.ini",
+      "destination": "OptiScaler.ini",
+      "type": "file",
+      "allowEmpty": false,
+      "sourceDescription": "default configuration"
+    },
+    {
+      "source": "setup_windows.bat",
+      "destination": "setup_windows.bat",
+      "type": "file",
+      "allowEmpty": false,
+      "sourceDescription": "Windows setup script"
+    },
+    {
+      "source": "setup_linux.sh",
+      "destination": "setup_linux.sh",
+      "type": "file",
+      "allowEmpty": false,
+      "sourceDescription": "Linux setup script"
+    },
+    {
+      "source": "external\\xess\\bin",
+      "destination": "OptiScaler",
+      "type": "directory",
+      "pattern": "*.dll",
+      "sourceDescription": "XeSS runtime"
+    },
+    {
+      "source": "streamline",
+      "destination": "OptiScaler\\streamline",
+      "type": "directory",
+      "pattern": "*.dll",
+      "sourceDescription": "Streamline runtime"
+    },
+    {
+      "source": "external\\FidelityFX-SDK\\PrebuiltSignedDLL\\amd_fidelityfx_vk.dll",
+      "destination": "OptiScaler\\amd_fidelityfx_vk.dll",
+      "type": "file",
+      "allowEmpty": false,
+      "sourceDescription": "FidelityFX Vulkan runtime"
+    },
+    {
+      "source": "external\\FidelityFX-SDK-v2\\Kits\\FidelityFX\\signedbin\\amd_fidelityfx_loader_dx12.dll",
+      "destination": "OptiScaler\\amd_fidelityfx_dx12.dll",
+      "type": "file",
+      "allowEmpty": false,
+      "sourceDescription": "FidelityFX DX12 loader"
+    },
+    {
+      "source": "external\\FidelityFX-SDK-v2\\Kits\\FidelityFX\\signedbin\\amd_fidelityfx_upscaler_dx12.dll",
+      "destination": "OptiScaler\\amd_fidelityfx_upscaler_dx12.dll",
+      "type": "file",
+      "allowEmpty": false,
+      "sourceDescription": "FidelityFX upscaler runtime"
+    },
+    {
+      "source": "external\\FidelityFX-SDK-v2\\Kits\\FidelityFX\\signedbin\\amd_fidelityfx_framegeneration_dx12.dll",
+      "destination": "OptiScaler\\amd_fidelityfx_framegeneration_dx12.dll",
+      "type": "file",
+      "allowEmpty": false,
+      "sourceDescription": "FidelityFX frame generation runtime"
+    },
+    {
+      "source": "external\\directx_agility_sdk\\lib\\D3D12Core.dll",
+      "destination": "OptiScaler\\D3D12_OptiScaler\\D3D12Core.dll",
+      "type": "file",
+      "allowEmpty": false,
+      "sourceDescription": "DirectX Agility runtime"
+    },
+    {
+      "source": "external\\xess\\LICENSE.txt",
+      "destination": "Licenses\\XeSS_LICENSE.txt",
+      "type": "file",
+      "allowEmpty": false,
+      "sourceDescription": "XeSS license"
+    },
+    {
+      "source": "external\\FidelityFX-SDK\\LICENSE.txt",
+      "destination": "Licenses\\FidelityFX_v1_LICENSE.txt",
+      "type": "file",
+      "allowEmpty": false,
+      "sourceDescription": "FidelityFX v1 license"
+    },
+    {
+      "source": "external\\FidelityFX-SDK-v2\\docs\\license.md",
+      "destination": "Licenses\\FidelityFX_v2_LICENSE.txt",
+      "type": "file",
+      "allowEmpty": false,
+      "sourceDescription": "FidelityFX v2 license"
+    },
+    {
+      "source": "external\\directx_agility_sdk\\LICENSE.txt",
+      "destination": "Licenses\\DirectX_LICENSE.txt",
+      "type": "file",
+      "allowEmpty": false,
+      "sourceDescription": "DirectX Agility license"
+    }
+  ]
+}
