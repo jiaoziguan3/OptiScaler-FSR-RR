@@ -7,6 +7,9 @@
 #include "proxies/Ntdll_Proxy.h"
 #include <proxies/FfxApi_Proxy.h>
 #include <numbers>
+#include <misc/IdentifyGpu.h>
+
+using Microsoft::WRL::ComPtr;
 
 bool Nvngx_FFX::Init()
 {
@@ -15,7 +18,8 @@ bool Nvngx_FFX::Init()
     if (inited)
         return true;
 
-    if (!FfxApiProxy::IsFGReady())
+    constexpr bool sendNotification = false;
+    if (!FfxApiProxy::IsFGReady(sendNotification))
         FfxApiProxy::InitFfxDx12();
 
     if (!FfxApiProxy::IsFGReady())
@@ -100,10 +104,14 @@ NVSDK_NGX_Result Nvngx_FFX::D3D12_ReleaseFeature(NVSDK_NGX_Handle* InHandle)
     if (!InOurHandle || InOurHandle->Id < NVNGX_PROVIDER_ID_OFFSET)
         return NVSDK_NGX_Result_FAIL_InvalidParameter;
 
-    // TODO: destroy FFX context
     if (inited && InOurHandle->fgContext)
     {
-        LOG_WARN("TODO: destroy FFX context");
+        auto retCode = FfxApiProxy::D3D12_DestroyContext(&InOurHandle->fgContext, nullptr);
+
+        if (retCode == FFX_API_RETURN_OK)
+            InOurHandle->fgContext = nullptr;
+        else
+            LOG_WARN("Could destroy FFX context");
     }
 
     InOurHandle->device->Release();
@@ -188,6 +196,50 @@ static void CopyTexture(ID3D12GraphicsCommandList* CommandList, const FfxApiReso
     std::swap(barriers[0].Transition.StateBefore, barriers[0].Transition.StateAfter);
     std::swap(barriers[1].Transition.StateBefore, barriers[1].Transition.StateAfter);
     cmdList12->ResourceBarrier(2, barriers);
+}
+
+// Implementation used as baseline
+// https://github.com/Nukem9/dlssg-to-fsr3/blob/0e253f63c3c66ee7582406bfa3dec698df7ab2c1/source/maindll/FFFrameInterpolator.cpp
+bool QueryHDRLuminanceRange(NVSDK_NGX_Parameter* InParameters, Nvngx_FFX_Handle* handle)
+{
+    if (handle->hdrRangeSet)
+        return true;
+
+    // Microsoft DirectX 12 HDR sample
+    // https://github.com/microsoft/DirectX-Graphics-Samples/blob/b5f92e2251ee83db4d4c795b3cba5d470c52eaf8/Samples/Desktop/D3D12HDR/src/D3D12HDR.cpp#L1064
+    ComPtr<IDXGIFactory1> factory;
+    ComPtr<IDXGIOutput> output = nullptr;
+
+    if (CreateDXGIFactory1(IID_PPV_ARGS(&factory)) == S_OK)
+    {
+        ComPtr<IDXGIAdapter> adapter;
+        IdentifyGpu::getHardwareAdapter(factory.Get(), adapter.GetAddressOf(), D3D_FEATURE_LEVEL_12_0);
+
+        // Then check the first HDR-capable output
+        for (uint32_t j = 0; adapter->EnumOutputs(j, &output) == S_OK; j++)
+        {
+            if (IDXGIOutput6* output6; output->QueryInterface(IID_PPV_ARGS(&output6)) == S_OK)
+            {
+                DXGI_OUTPUT_DESC1 outputDesc = {};
+                output6->GetDesc1(&outputDesc);
+                output6->Release();
+
+                if (outputDesc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 && !handle->hdrRangeSet)
+                {
+                    handle->hdrMinLuminance = outputDesc.MinLuminance;
+                    handle->hdrMaxLuminance = outputDesc.MaxLuminance;
+                    handle->hdrRangeSet = true;
+                }
+            }
+        }
+    }
+
+    // Keep using hardcoded defaults even if we didn't find a valid output
+    handle->hdrRangeSet = true;
+
+    LOG_INFO("Using assumed HDR luminance range: {} to {} nits", handle->hdrMinLuminance, handle->hdrMaxLuminance);
+
+    return true;
 }
 
 NVSDK_NGX_Result Nvngx_FFX::D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InCmdList,
@@ -327,8 +379,36 @@ NVSDK_NGX_Result Nvngx_FFX::D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InC
     backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
     backendDesc.device = InOurHandle->device;
 
+    if (State::Instance().fgChanged && InOurHandle->fgContext)
+    {
+        auto retCode = FfxApiProxy::D3D12_DestroyContext(&InOurHandle->fgContext, nullptr);
+
+        if (retCode == FFX_API_RETURN_OK)
+            InOurHandle->fgContext = nullptr;
+        else
+            LOG_WARN("Could destroy FFX context");
+    }
+
+    State::Instance().fgChanged = false;
+
     if (InOurHandle->fgContext == nullptr)
     {
+        ffxQueryDescGetVersions versionQuery {};
+        versionQuery.header.type = FFX_API_QUERY_DESC_TYPE_GET_VERSIONS;
+        versionQuery.createDescType = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATION;
+        versionQuery.device = InOurHandle->device;
+        uint64_t versionCount = 0;
+        versionQuery.outputCount = &versionCount;
+        // get number of versions for allocation
+        FfxApiProxy::D3D12_Query(nullptr, &versionQuery.header);
+
+        State::Instance().ffxFGVersionIds.resize(versionCount);
+        State::Instance().ffxFGVersionNames.resize(versionCount);
+        versionQuery.versionIds = State::Instance().ffxFGVersionIds.data();
+        versionQuery.versionNames = State::Instance().ffxFGVersionNames.data();
+        // fill version ids and names arrays.
+        FfxApiProxy::D3D12_Query(nullptr, &versionQuery.header);
+
         ffxCreateContextDescFrameGeneration createFg {};
         createFg.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATION;
 
@@ -365,8 +445,8 @@ NVSDK_NGX_Result Nvngx_FFX::D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InC
             createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS;
         }
 
-        // if (fgConstants.flags & FG_Flags::Async)
-        createFg.flags |= FFX_FRAMEGENERATION_ENABLE_ASYNC_WORKLOAD_SUPPORT;
+        if (Config::Instance()->FGAsync.value_or_default())
+            createFg.flags |= FFX_FRAMEGENERATION_ENABLE_ASYNC_WORKLOAD_SUPPORT;
 
         if (depthPlaneInfinite)
             createFg.flags |= FFX_FRAMEGENERATION_ENABLE_DEPTH_INFINITE;
@@ -379,12 +459,32 @@ NVSDK_NGX_Result Nvngx_FFX::D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InC
 
         // TODO: add code for hudless with different formats
 
-        ffxReturnCode_t retCode = FfxApiProxy::D3D12_CreateContext(&InOurHandle->fgContext, &createFg.header, nullptr);
-
-        if (retCode != FFX_API_RETURN_OK)
         {
-            LOG_ERROR("Failed to create FFX context");
-            return NVSDK_NGX_Result_Fail;
+            ScopedSkipSpoofing skipSpoofing {};
+            ScopedSkipHeapCapture skipHeapCapture {};
+
+            // Currently 0 is non-ML FG and 1 is ML FG
+            if (Config::Instance()->FfxFGIndex.value_or_default() < 0 ||
+                Config::Instance()->FfxFGIndex.value_or_default() >= State::Instance().ffxFGVersionIds.size())
+                Config::Instance()->FfxFGIndex.set_volatile_value(0);
+
+            ffxOverrideVersion override = { 0 };
+            override.header.type = FFX_API_DESC_TYPE_OVERRIDE_VERSION;
+            override.versionId = State::Instance().ffxFGVersionIds[Config::Instance()->FfxFGIndex.value_or_default()];
+
+            backendDesc.header.pNext = &override.header;
+
+            _version.parse_version(
+                State::Instance().ffxFGVersionNames[Config::Instance()->FfxFGIndex.value_or_default()]);
+
+            ffxReturnCode_t retCode =
+                FfxApiProxy::D3D12_CreateContext(&InOurHandle->fgContext, &createFg.header, nullptr);
+
+            if (retCode != FFX_API_RETURN_OK)
+            {
+                LOG_ERROR("Failed to create FFX context");
+                return NVSDK_NGX_Result_Fail;
+            }
         }
     }
 
@@ -401,8 +501,12 @@ NVSDK_NGX_Result Nvngx_FFX::D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InC
     ffxConfigureDescFrameGeneration configureDesc {};
     configureDesc.header.type = FFX_API_CONFIGURE_DESC_TYPE_FRAMEGENERATION;
     configureDesc.frameGenerationEnabled = true;
-    // configureDesc.allowAsyncWorkloads = true; // TODO: can crash
+    configureDesc.allowAsyncWorkloads = Config::Instance()->FGAsync.value_or_default();
     configureDesc.flags = FFX_FRAMEGENERATION_FLAG_NO_SWAPCHAIN_CONTEXT_NOTIFY;
+
+    if (Config::Instance()->FGDebugView.value_or_default())
+        configureDesc.flags |= FFX_FRAMEGENERATION_FLAG_DRAW_DEBUG_VIEW;
+
     configureDesc.frameID = InOurHandle->lastFrameId;
     configureDesc.generationRect = { 0, 0, (int) InOurHandle->swapchainWidth, (int) InOurHandle->swapchainHeight };
 
@@ -472,10 +576,20 @@ NVSDK_NGX_Result Nvngx_FFX::D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InC
     dispatchDesc.frameID = InOurHandle->lastFrameId;
     dispatchDesc.generationRect = { 0, 0, (int) InOurHandle->swapchainWidth, (int) InOurHandle->swapchainHeight };
 
-    // dispatchDesc.backbufferTransferFunction =
-    //     hdr ? FFX_API_BACKBUFFER_TRANSFER_FUNCTION_PQ : FFX_API_BACKBUFFER_TRANSFER_FUNCTION_SRGB;
-    // dispatchDesc.minMaxLuminance[0] = 0.0001f;
-    // dispatchDesc.minMaxLuminance[1] = 1000.0f;
+    dispatchDesc.backbufferTransferFunction =
+        hdr ? FFX_API_BACKBUFFER_TRANSFER_FUNCTION_PQ : FFX_API_BACKBUFFER_TRANSFER_FUNCTION_SRGB;
+
+    if (hdr && QueryHDRLuminanceRange(InParameters, InOurHandle))
+    {
+
+        dispatchDesc.minMaxLuminance[0] = InOurHandle->hdrMinLuminance;
+        dispatchDesc.minMaxLuminance[1] = InOurHandle->hdrMaxLuminance;
+    }
+    else
+    {
+        dispatchDesc.minMaxLuminance[0] = 0.0001f;
+        dispatchDesc.minMaxLuminance[1] = 1000.0f;
+    }
 
     dispatchDesc.numGeneratedFrames = 1;
     dispatchDesc.outputs[0] = ffxApiGetResourceDX12(output, FFX_API_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -496,7 +610,13 @@ NVSDK_NGX_Result Nvngx_FFX::D3D12_EvaluateFeature(ID3D12GraphicsCommandList* InC
 
     // Copy backbuffer to output real
     if (outputReal)
-        CopyTexture(InCmdList, &outputRealFfx, &dispatchDesc.presentColor);
+    {
+        // Only fake frames gets the debug view, copy the fake frame to output to prevent flickering
+        if (configureDesc.flags & FFX_FRAMEGENERATION_FLAG_DRAW_DEBUG_VIEW)
+            CopyTexture(InCmdList, &outputRealFfx, &dispatchDesc.outputs[0]);
+        else
+            CopyTexture(InCmdList, &outputRealFfx, &dispatchDesc.presentColor);
+    }
 
     return NVSDK_NGX_Result_Success;
 }

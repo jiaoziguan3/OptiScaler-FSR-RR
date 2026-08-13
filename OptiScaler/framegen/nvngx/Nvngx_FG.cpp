@@ -40,9 +40,28 @@ IFGNvngx* Nvngx_FG::getProvider()
 
     if (!_provider->isDx12Available() && !_provider->isVulkanAvailable())
     {
-        // The selected provider cannot be used, try the remaining providers as fallback
-        const FGNvngxReplacement fallbacks[] = { FGNvngxReplacement::FFX, FGNvngxReplacement::Nukems,
-                                                 FGNvngxReplacement::Arturs };
+        // The selected provider cannot be used, try the remaining providers as fallback, try in order
+        const FGNvngxReplacement fallbacks[] = {
+            FGNvngxReplacement::Arturs,
+            FGNvngxReplacement::FFX,
+            FGNvngxReplacement::Nukems,
+        };
+
+        auto formatProvider = [](FGNvngxReplacement provider)
+        {
+            switch (provider)
+            {
+            case FGNvngxReplacement::Arturs:
+                return "Enabler";
+            case FGNvngxReplacement::FFX:
+                return "Nvngx FFX";
+            case FGNvngxReplacement::Nukems:
+                return "Nukems";
+            case FGNvngxReplacement::None:
+            default:
+                return "???";
+            }
+        };
 
         for (const auto fallback : fallbacks)
         {
@@ -78,17 +97,21 @@ IFGNvngx* Nvngx_FG::getProvider()
             Config::Instance()->FGNvngxReplacement.set_volatile_value(fallback);
             State::Instance().activeFgNvngx = fallback;
 
-            LOG_WARN("Selected Nvngx FG provider is not available, falling back to another provider");
+            LOG_WARN("Nvngx FG provider {} is not available, falling back to {}", formatProvider(selectedProvider),
+                     formatProvider(fallback));
 
             ImGui::InsertNotification({ ImGuiToastType::Warning, 20000,
-                                        "Selected Nvngx FG provider is not available.\n"
-                                        "Falling back to another provider." });
+                                        std::format("{} is not available.\nFalling back to {}.",
+                                                    formatProvider(selectedProvider), formatProvider(fallback))
+                                            .c_str() });
 
             return _provider.get();
         }
 
-        LOG_ERROR("Selected Nvngx FG provider is not available");
-        ImGui::InsertNotification({ ImGuiToastType::Error, 20000, "Selected Nvngx FG provider is not available" });
+        LOG_ERROR("Nvngx FG provider {} is not available and can't fallback", formatProvider(selectedProvider));
+        ImGui::InsertNotification(
+            { ImGuiToastType::Error, 20000,
+              std::format("{} is not available and can't fallback", formatProvider(selectedProvider)).c_str() });
 
         Config::Instance()->FGNvngxReplacement.set_volatile_value(FGNvngxReplacement::None);
         State::Instance().activeFgNvngx = FGNvngxReplacement::None;
@@ -100,14 +123,14 @@ IFGNvngx* Nvngx_FG::getProvider()
     return _provider.get();
 }
 
-int Nvngx_FG::getMaxFakeFramesCount(API api)
+int Nvngx_FG::getMaxFakeFramesCount()
 {
     auto* provider = getProvider();
 
     if (!provider)
         return false;
 
-    return provider->getMaxFakeFramesCount(api);
+    return provider->getMaxFakeFramesCount();
 }
 
 bool Nvngx_FG::isDx12Available()
@@ -128,6 +151,16 @@ bool Nvngx_FG::isVulkanAvailable()
         return false;
 
     return provider->isVulkanAvailable();
+}
+
+feature_version Nvngx_FG::version()
+{
+    auto* provider = getProvider();
+
+    if (!provider)
+        return {};
+
+    return provider->version();
 }
 
 void Nvngx_FG::setDebugView(bool enabled)

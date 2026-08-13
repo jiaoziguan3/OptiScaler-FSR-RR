@@ -16,9 +16,10 @@ class Nvngx_FG
     static IFGNvngx* getProvider();
 
   public:
-    static int getMaxFakeFramesCount(API api);
+    static int getMaxFakeFramesCount();
     static bool isDx12Available();
     static bool isVulkanAvailable();
+    static feature_version version();
 
     // TODO: nukem-specific, unify
     static void setDebugView(bool enabled);
